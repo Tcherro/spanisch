@@ -1,0 +1,776 @@
+{
+ "dem": [
+  {
+   "t": "mc",
+   "q": "___ problema no tiene solución.",
+   "de": "Dieses Problem hat keine Lösung.",
+   "opts": [
+    "Este",
+    "Aquella",
+    "Estos",
+    "Esa"
+   ],
+   "ex": "problema ist maskulin"
+  },
+  {
+   "t": "mc",
+   "q": "___ idioma es difícil.",
+   "de": "Diese Sprache ist schwierig.",
+   "opts": [
+    "Este",
+    "Esos",
+    "Aquella",
+    "Esa"
+   ],
+   "ex": "idioma ist maskulin"
+  },
+  {
+   "t": "mc",
+   "q": "___ personas son simpáticas.",
+   "de": "Diese Personen sind sympathisch.",
+   "opts": [
+    "Estas",
+    "Ese",
+    "Aquella",
+    "Este"
+   ],
+   "ex": "feminin Plural"
+  },
+  {
+   "t": "mc",
+   "q": "___ radio es vieja.",
+   "de": "Dieses Radio ist alt.",
+   "opts": [
+    "Esta",
+    "Esos",
+    "Estas",
+    "Esas"
+   ],
+   "ex": "feminin Singular"
+  },
+  {
+   "t": "mc",
+   "q": "___ naranjas son caras.",
+   "de": "Diese Orangen sind teuer.",
+   "opts": [
+    "Estas",
+    "Estos",
+    "Esa",
+    "Aquella"
+   ],
+   "ex": "feminin Plural"
+  },
+  {
+   "t": "mc",
+   "q": "___ plátanos son buenos.",
+   "de": "Diese Bananen sind gut.",
+   "opts": [
+    "Estos",
+    "Ese",
+    "Aquella",
+    "Esos"
+   ],
+   "ex": "maskulin Plural"
+  },
+  {
+   "t": "mc",
+   "q": "___ niña es bonita.",
+   "de": "Dieses Mädchen ist hübsch.",
+   "opts": [
+    "Esta",
+    "Esa",
+    "Aquella",
+    "Ese"
+   ],
+   "ex": "feminin Singular"
+  },
+  {
+   "t": "mc",
+   "q": "___ hombre es inteligente.",
+   "de": "Dieser Mann ist intelligent.",
+   "opts": [
+    "Este",
+    "Aquella",
+    "Esa",
+    "Esas"
+   ],
+   "ex": "maskulin Singular"
+  },
+  {
+   "t": "mc",
+   "q": "___ libro, ¿es caro?",
+   "de": "Ist dieses Buch da teuer?",
+   "opts": [
+    "Ese",
+    "Esa",
+    "Estas",
+    "Estos"
+   ],
+   "ex": "maskulin Singular"
+  },
+  {
+   "t": "mc",
+   "q": "___ idioma, ¿es difícil?",
+   "de": "Ist diese Sprache da schwierig?",
+   "opts": [
+    "Ese",
+    "Esa",
+    "Estos",
+    "Este"
+   ],
+   "ex": "idioma ist maskulin"
+  },
+  {
+   "t": "mc",
+   "q": "___ problema, ¿no tiene solución?",
+   "de": "Hat dieses Problem da keine Lösung?",
+   "opts": [
+    "Ese",
+    "Esta",
+    "Estos",
+    "Aquel"
+   ],
+   "ex": "problema ist maskulin"
+  },
+  {
+   "t": "mc",
+   "q": "___ color es bonito.",
+   "de": "Diese Farbe da ist schön.",
+   "opts": [
+    "Ese",
+    "Estas",
+    "Esta",
+    "Aquel"
+   ],
+   "ex": "maskulin Singular"
+  },
+  {
+   "t": "mc",
+   "q": "___ amigos son falsos.",
+   "de": "Diese Freunde da sind falsch.",
+   "opts": [
+    "Esos",
+    "Este",
+    "Ese",
+    "Esta"
+   ],
+   "ex": "maskulin Plural"
+  },
+  {
+   "t": "mc",
+   "q": "¿___ es tu casa?",
+   "de": "Ist das da dein Haus?",
+   "opts": [
+    "Esa",
+    "Aquel",
+    "Este",
+    "Esos"
+   ],
+   "ex": "Pronomen zu casa"
+  },
+  {
+   "t": "mc",
+   "q": "¿___ son tus padres?",
+   "de": "Sind das da deine Eltern?",
+   "opts": [
+    "Esos",
+    "Estos",
+    "Esa",
+    "Esas"
+   ],
+   "ex": "maskulin Plural"
+  },
+  {
+   "t": "mc",
+   "q": "¿___ son tus hermanas?",
+   "de": "Sind das da deine Schwestern?",
+   "opts": [
+    "Esas",
+    "Aquella",
+    "Estos",
+    "Estas"
+   ],
+   "ex": "feminin Plural"
+  }
+ ],
+ "adj": [
+  {
+   "t": "type",
+   "q": "El hotel es pequeñ___",
+   "de": "Das Hotel ist klein.",
+   "ans": [
+    "pequeño",
+    "o"
+   ],
+   "ex": "pequeño"
+  },
+  {
+   "t": "type",
+   "q": "El restaurante es nuev___",
+   "de": "Das Restaurant ist neu.",
+   "ans": [
+    "nuevo",
+    "o"
+   ],
+   "ex": "nuevo"
+  },
+  {
+   "t": "type",
+   "q": "La casa es grand___",
+   "de": "Das Haus ist groß.",
+   "ans": [
+    "grande",
+    "e"
+   ],
+   "ex": "grande"
+  },
+  {
+   "t": "type",
+   "q": "El bar es barat___",
+   "de": "Die Bar ist günstig.",
+   "ans": [
+    "barato",
+    "o"
+   ],
+   "ex": "barato"
+  },
+  {
+   "t": "type",
+   "q": "La plaza es bonit___",
+   "de": "Der Platz ist schön.",
+   "ans": [
+    "bonita",
+    "a"
+   ],
+   "ex": "bonita"
+  },
+  {
+   "t": "type",
+   "q": "Los estudiantes son inteligent___",
+   "de": "Die Studenten sind intelligent.",
+   "ans": [
+    "inteligentes",
+    "es"
+   ],
+   "ex": "inteligentes"
+  },
+  {
+   "t": "type",
+   "q": "Las naranjas son car___",
+   "de": "Die Orangen sind teuer.",
+   "ans": [
+    "caras",
+    "as"
+   ],
+   "ex": "caras"
+  },
+  {
+   "t": "type",
+   "q": "La ciudad es antigu___",
+   "de": "Die Stadt ist alt.",
+   "ans": [
+    "antigua",
+    "a"
+   ],
+   "ex": "antigua"
+  },
+  {
+   "t": "type",
+   "q": "Los ejercicios son difícil___",
+   "de": "Die Übungen sind schwierig.",
+   "ans": [
+    "difíciles",
+    "es"
+   ],
+   "ex": "difíciles"
+  },
+  {
+   "t": "type",
+   "q": "Pilar es simpátic___",
+   "de": "Pilar ist sympathisch.",
+   "ans": [
+    "simpática",
+    "a"
+   ],
+   "ex": "simpática"
+  }
+ ],
+ "prep": [
+  {
+   "t": "mc",
+   "q": "¿___ va el tren?",
+   "de": "Wohin fährt der Zug?",
+   "opts": [
+    "Adónde",
+    "A",
+    "En",
+    "Dónde"
+   ],
+   "ex": "a + dónde = wohin"
+  },
+  {
+   "t": "mc",
+   "q": "El tren va ___ París.",
+   "de": "Der Zug fährt nach Paris.",
+   "opts": [
+    "a",
+    "en",
+    "De dónde",
+    "Dónde"
+   ],
+   "ex": "ir a + Ort"
+  },
+  {
+   "t": "mc",
+   "q": "Viene ___ Roma.",
+   "de": "Er kommt aus Rom.",
+   "opts": [
+    "de",
+    "De dónde",
+    "a",
+    "en"
+   ],
+   "ex": "venir de + Ort"
+  },
+  {
+   "t": "mc",
+   "q": "¿___ están los pasajeros?",
+   "de": "Wo sind die Passagiere?",
+   "opts": [
+    "Dónde",
+    "De",
+    "A",
+    "En"
+   ],
+   "ex": "dónde = wo"
+  },
+  {
+   "t": "mc",
+   "q": "Están ___ el avión.",
+   "de": "Sie sind im Flugzeug.",
+   "opts": [
+    "en",
+    "Dónde",
+    "de",
+    "Adónde"
+   ],
+   "ex": "en = in/auf"
+  },
+  {
+   "t": "mc",
+   "q": "¿___ están las maletas?",
+   "de": "Wo sind die Koffer?",
+   "opts": [
+    "Dónde",
+    "De dónde",
+    "Adónde",
+    "En"
+   ],
+   "ex": "dónde = wo"
+  },
+  {
+   "t": "mc",
+   "q": "Están ___ el coche.",
+   "de": "Sie sind im Auto.",
+   "opts": [
+    "en",
+    "de",
+    "a",
+    "Adónde"
+   ],
+   "ex": "en = in"
+  },
+  {
+   "t": "mc",
+   "q": "¿___ va el Sr. Martín?",
+   "de": "Wohin fährt Herr Martín?",
+   "opts": [
+    "Adónde",
+    "En",
+    "A",
+    "De"
+   ],
+   "ex": "adónde = wohin"
+  },
+  {
+   "t": "mc",
+   "q": "Va ___ Colonia.",
+   "de": "Er fährt nach Köln.",
+   "opts": [
+    "a",
+    "De dónde",
+    "Dónde",
+    "en"
+   ],
+   "ex": "a + Ort"
+  }
+ ],
+ "pos_ort": [
+  {
+   "t": "mc",
+   "q": "El reloj está ___ del cuadro.",
+   "de": "Die Uhr ist neben dem Bild.",
+   "opts": [
+    "al lado",
+    "a la derecha",
+    "dentro",
+    "detrás"
+   ],
+   "ex": "al = a + el"
+  },
+  {
+   "t": "mc",
+   "q": "Las zapatillas están ___ de la mesita.",
+   "de": "Die Hausschuhe sind unter dem kleinen Tisch.",
+   "opts": [
+    "debajo",
+    "detrás",
+    "a la izquierda",
+    "encima"
+   ],
+   "ex": "debajo de"
+  },
+  {
+   "t": "mc",
+   "q": "El teléfono está ___ del ordenador.",
+   "de": "Das Telefon liegt rechts vom Computer.",
+   "opts": [
+    "a la derecha",
+    "encima",
+    "entre",
+    "a la izquierda"
+   ],
+   "ex": "del = de + el"
+  },
+  {
+   "t": "mc",
+   "q": "El sillón está ___ de la librería.",
+   "de": "Der Sessel steht links vom Bücherregal.",
+   "opts": [
+    "a la izquierda",
+    "dentro",
+    "entre",
+    "encima"
+   ],
+   "ex": "de la bleibt getrennt"
+  },
+  {
+   "t": "mc",
+   "q": "Las gafas están ___ el teléfono y el ordenador.",
+   "de": "Die Brille liegt zwischen dem Telefon und dem Computer.",
+   "opts": [
+    "entre",
+    "al lado",
+    "delante",
+    "detrás"
+   ],
+   "ex": "entre ... y ..."
+  },
+  {
+   "t": "mc",
+   "q": "El gato está ___ de David.",
+   "de": "Die Katze ist hinter David.",
+   "opts": [
+    "detrás",
+    "debajo",
+    "al lado",
+    "a la izquierda"
+   ],
+   "ex": "detrás de"
+  },
+  {
+   "t": "mc",
+   "q": "La ventana está ___ de la planta.",
+   "de": "Das Fenster ist über der Pflanze.",
+   "opts": [
+    "encima",
+    "fuera",
+    "a la izquierda",
+    "a la derecha"
+   ],
+   "ex": "encima de"
+  },
+  {
+   "t": "mc",
+   "q": "El paraguas está ___ del teléfono.",
+   "de": "Der Regenschirm steht unter dem Telefon.",
+   "opts": [
+    "debajo",
+    "detrás",
+    "encima",
+    "a la derecha"
+   ],
+   "ex": "del = de + el"
+  },
+  {
+   "t": "mc",
+   "q": "El cuadro está ___ la estantería y el reloj.",
+   "de": "Das Bild hängt zwischen dem Regal und der Uhr.",
+   "opts": [
+    "entre",
+    "debajo",
+    "fuera",
+    "delante"
+   ],
+   "ex": "entre ... y ..."
+  },
+  {
+   "t": "mc",
+   "q": "El gato está ___ del sofá.",
+   "de": "Die Katze ist auf dem Sofa.",
+   "opts": [
+    "encima",
+    "a la izquierda",
+    "delante",
+    "detrás"
+   ],
+   "ex": "del = de + el"
+  },
+  {
+   "t": "order",
+   "de": "Gegenteil von: El libro está debajo de la mesa.",
+   "ans": "El libro está encima de la mesa.",
+   "ex": "debajo ↔ encima"
+  },
+  {
+   "t": "order",
+   "de": "Gegenteil von: La bicicleta está dentro del garaje.",
+   "ans": "La bicicleta está fuera del garaje.",
+   "ex": "dentro ↔ fuera"
+  },
+  {
+   "t": "order",
+   "de": "Gegenteil von: La estatua está delante del museo.",
+   "ans": "La estatua está detrás del museo.",
+   "ex": "delante ↔ detrás"
+  },
+  {
+   "t": "order",
+   "de": "Gegenteil von: El diccionario está sobre el cuaderno.",
+   "ans": "El diccionario está debajo del cuaderno.",
+   "ex": "sobre ↔ debajo"
+  },
+  {
+   "t": "order",
+   "de": "Gegenteil von: El restaurante está a la izquierda de la calle.",
+   "ans": "El restaurante está a la derecha de la calle.",
+   "ex": "izquierda ↔ derecha"
+  },
+  {
+   "t": "order",
+   "de": "Gegenteil von: El documento está debajo del libro.",
+   "ans": "El documento está encima del libro.",
+   "ex": "debajo ↔ encima"
+  },
+  {
+   "t": "order",
+   "de": "Gegenteil von: La pelota está dentro del armario.",
+   "ans": "La pelota está fuera del armario.",
+   "ex": "dentro ↔ fuera"
+  },
+  {
+   "t": "order",
+   "de": "Gegenteil von: El dinero está detrás de la foto.",
+   "ans": "El dinero está delante de la foto.",
+   "ex": "detrás ↔ delante"
+  },
+  {
+   "t": "order",
+   "de": "Gegenteil von: El cuadro está a la derecha de la puerta.",
+   "ans": "El cuadro está a la izquierda de la puerta.",
+   "ex": "derecha ↔ izquierda"
+  },
+  {
+   "t": "order",
+   "de": "Gegenteil von: El gato está encima de la silla.",
+   "ans": "El gato está debajo de la silla.",
+   "ex": "encima ↔ debajo"
+  },
+  {
+   "t": "order",
+   "de": "Gegenteil von: La ventana está a la izquierda del salón.",
+   "ans": "La ventana está a la derecha del salón.",
+   "ex": "izquierda ↔ derecha"
+  },
+  {
+   "t": "mc",
+   "q": "El reloj está ___ lado del cuadro.",
+   "de": "Die Uhr ist neben dem Bild.",
+   "opts": [
+    "al",
+    "de las",
+    "de la",
+    "de los"
+   ],
+   "ex": "a + el = al"
+  },
+  {
+   "t": "mc",
+   "q": "El sofá está al lado ___ sillón.",
+   "de": "Das Sofa steht neben dem Sessel.",
+   "opts": [
+    "del",
+    "de las",
+    "al",
+    "de la"
+   ],
+   "ex": "de + el = del"
+  },
+  {
+   "t": "mc",
+   "q": "La planta está debajo ___ ventana.",
+   "de": "Die Pflanze steht unter dem Fenster.",
+   "opts": [
+    "de la",
+    "del",
+    "de los",
+    "al"
+   ],
+   "ex": "de + la = de la"
+  },
+  {
+   "t": "mc",
+   "q": "El portátil está encima ___ escritorio.",
+   "de": "Der Laptop steht auf dem Schreibtisch.",
+   "opts": [
+    "del",
+    "de la",
+    "de los",
+    "al"
+   ],
+   "ex": "de + el = del"
+  },
+  {
+   "t": "mc",
+   "q": "La alfombra está debajo ___ silla.",
+   "de": "Der Teppich liegt unter dem Stuhl.",
+   "opts": [
+    "de la",
+    "de los",
+    "al",
+    "de las"
+   ],
+   "ex": "de + la = de la"
+  },
+  {
+   "t": "mc",
+   "q": "El balón está detrás ___ zapatos.",
+   "de": "Der Ball liegt hinter den Schuhen.",
+   "opts": [
+    "de los",
+    "al",
+    "del",
+    "de la"
+   ],
+   "ex": "de + los = de los"
+  },
+  {
+   "t": "mc",
+   "q": "El paraguas está a la derecha ___ gafas.",
+   "de": "Der Regenschirm steht rechts von der Brille.",
+   "opts": [
+    "de las",
+    "al",
+    "de los",
+    "de la"
+   ],
+   "ex": "de + las = de las"
+  },
+  {
+   "t": "mc",
+   "q": "La lámpara está delante ___ pared.",
+   "de": "Die Lampe steht vor der Wand.",
+   "opts": [
+    "de la",
+    "al",
+    "de los",
+    "de las"
+   ],
+   "ex": "de + la = de la"
+  },
+  {
+   "t": "mc",
+   "q": "El cuadro está a la izquierda ___ reloj.",
+   "de": "Das Bild hängt links von der Uhr.",
+   "opts": [
+    "del",
+    "al",
+    "de las",
+    "de la"
+   ],
+   "ex": "de + el = del"
+  },
+  {
+   "t": "mc",
+   "q": "El gato está encima ___ sofá.",
+   "de": "Die Katze ist auf dem Sofa.",
+   "opts": [
+    "del",
+    "de los",
+    "de las",
+    "al"
+   ],
+   "ex": "de + el = del"
+  },
+  {
+   "t": "order",
+   "de": "Der Laptop steht auf dem Schreibtisch.",
+   "ans": "El portátil está encima del escritorio.",
+   "ex": "encima de + el = del"
+  },
+  {
+   "t": "order",
+   "de": "Der Teppich liegt unter dem Schreibtisch.",
+   "ans": "La alfombra está debajo del escritorio.",
+   "ex": "debajo de + el = del"
+  },
+  {
+   "t": "order",
+   "de": "Der Fußball liegt neben dem Kühlschrank.",
+   "ans": "El balón de fútbol está al lado de la nevera.",
+   "ex": "al lado de"
+  },
+  {
+   "t": "order",
+   "de": "Die Lampe steht vor der Wand.",
+   "ans": "La lámpara está delante de la pared.",
+   "ex": "delante de"
+  },
+  {
+   "t": "order",
+   "de": "Die Wand ist hinter dem Sofa.",
+   "ans": "La pared está detrás del sofá.",
+   "ex": "detrás de + el = del"
+  },
+  {
+   "t": "order",
+   "de": "Die Decke ist über der Lampe.",
+   "ans": "El techo está encima de la lámpara.",
+   "ex": "encima de"
+  },
+  {
+   "t": "order",
+   "de": "Der Boden ist unter dem Teppich.",
+   "ans": "El suelo está debajo de la alfombra.",
+   "ex": "debajo de"
+  },
+  {
+   "t": "order",
+   "de": "An der nächsten Ampel links.",
+   "ans": "En el próximo semáforo, a la izquierda.",
+   "ex": "Richtungsangabe ohne Verb"
+  },
+  {
+   "t": "order",
+   "de": "Biegen Sie an der nächsten Ampel links ab.",
+   "ans": "En el próximo semáforo, gire a la izquierda.",
+   "ex": "gire = Höflichkeitsform"
+  },
+  {
+   "t": "order",
+   "de": "Wo ist der Fußball? Er ist in der Tasche.",
+   "ans": "¿Dónde está el balón de fútbol? Está en la cartera.",
+   "ex": "estar en"
+  }
+ ]
+}
