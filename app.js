@@ -63,7 +63,7 @@ function ole(text, sub) {
 /* ---------- Eselsbrücken ---------- */
 const BULB = '<svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2zM9 19h6v1.5a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 20.5z"/></svg>';
 const mnOf = id => (S.mn && S.mn[id]) || (D.mn && D.mn[id]) || '';
-function mnButton(id, pulse) { return mnOf(id) ? `<button class="mnbtn ${pulse ? 'pulse' : ''}" data-mn="${id}" type="button">${BULB}Eselsbrücke</button><div class="mnslot" data-slot="${id}"></div>` : ''; }
+function mnButton(id, pulse, label = 'Eselsbrücke') { return mnOf(id) ? `<button class="mnbtn ${pulse ? 'pulse' : ''}" data-mn="${id}" type="button">${BULB}${label}</button><div class="mnslot" data-slot="${id}"></div>` : ''; }
 function mnBoxHTML(id) {
   const own = S.mn && S.mn[id];
   return `<div class="mnbox"><div class="mntext">${esc(mnOf(id))}</div><div class="who"><span>${own ? 'Deine eigene' : 'Vorschlag'}</span><button type="button" data-mnedit="${id}">${own ? 'Ändern' : 'Eigene schreiben'}</button></div></div>`;
@@ -429,7 +429,7 @@ function showVocab(v, dir) {
   const long = v.es.length > 30 || v.es.split(' ').length > 5 || / \/ .* \/ /.test(v.es);
   if (long) {
     shell(`<div class="card"><div class="kind">Sag es auf Spanisch ${tag}<span style="margin-left:auto">${esc(src)}</span></div>
-      ${reel(v.de)}<p class="sub small">Sprich laut, dann aufdecken.</p>${mnButton(v.id)}</div>
+      ${reel(v.de)}<p class="sub small">Sprich laut, dann aufdecken.</p>${mnButton(v.id, false, 'Tipp: Eselsbrücke (halbe Punkte)')}</div>
       <div id="fb"><div class="actions"><button class="b-main" id="rev">Aufdecken</button></div></div>`);
     $('#rev').onclick = () => {
       say(v.es);
@@ -444,7 +444,7 @@ function showVocab(v, dir) {
     return;
   }
   shell(`<div class="card"><div class="kind">Auf Spanisch ${tag}<span style="margin-left:auto">${esc(src)}</span></div>
-    ${reel(v.de)}${mnButton(v.id)}</div>
+    ${reel(v.de)}${mnButton(v.id, false, 'Tipp: Eselsbrücke (halbe Punkte)')}</div>
     <form class="answer" id="af"><input id="ai" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" lang="es" enterkeyhint="done" placeholder="Antwort …" aria-label="Antwort auf Spanisch"><button class="go">OK</button></form>
     ${accentKeys()}
     <div id="fb"><div class="actions"><button class="b-plain" id="idk">Weiß ich nicht</button></div></div>`);
