@@ -1,8 +1,8 @@
 /* Offline-Cache. SHELL_VERSION bei App-Änderungen erhöhen; Daten werden network-first geladen. */
-const SHELL_VERSION = 'shell-1';
+const SHELL_VERSION = 'shell-2';
 const DATA_CACHE = 'data';
-const SHELL = ['./', 'index.html', 'styles.css', 'app.js', 'manifest.webmanifest', 'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png'];
-const DATA = ['data/meta.json', 'data/vocab.json', 'data/grammar.json', 'data/dialogs.json'];
+const SHELL = ['./', 'index.html', 'styles.css', 'app.js', 'manifest.webmanifest', 'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png', 'fonts/rye.woff2', 'fonts/bungee.woff2'];
+const DATA = ['data/meta.json', 'data/vocab.json', 'data/grammar.json', 'data/dialogs.json', 'data/mnemonics.json'];
 
 self.addEventListener('install', e => {
   e.waitUntil((async () => {
