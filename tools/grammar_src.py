@@ -354,6 +354,25 @@ topic("frec", "Häufigkeit", [8, 11, 28],
       ])
 
 
+topic("conect", "Konnektoren (Satzverbinder)", [28],
+      "<p><b>Gegensatz:</b> pero, sin embargo, no obstante (formell), aunque (obwohl), a pesar de + Nomen/Infinitiv (trotz).</p>"
+      "<p><b>Grund / Folge:</b> porque, ya que, como (nur am Satzanfang) · así que, por eso, por lo tanto.</p>"
+      "<p><b>Erklären / Gliedern:</b> es decir, o sea (umgangssprachlich), de hecho, por un lado … por otro lado, en resumen.</p>"
+      "<p><b>Immer mit Subjuntivo:</b> para que, antes de que, a menos que, sin que, con tal de que (kommt später im Kurs).</p>",
+      [
+          mc("___ llueve, no vamos a la playa.", "Da es regnet, gehen wir nicht an den Strand.", ["Como", "Porque", "Aunque", "Así que"], "Grund am Satzanfang → como."),
+          mc("Estoy cansado, ___ me voy a casa.", "Ich bin müde, also gehe ich nach Hause.", ["así que", "aunque", "sin embargo", "a pesar de"]),
+          mc("Quiero ir; ___, no tengo tiempo.", "Ich will hingehen; ich habe jedoch keine Zeit.", ["sin embargo", "por lo tanto", "ya que", "es decir"]),
+          mc("___ la lluvia, salimos a pasear.", "Trotz des Regens gehen wir spazieren.", ["A pesar de", "Aunque", "Sin embargo", "Como"], "a pesar de + Nomen."),
+          mc("___ estoy cansado, voy al gimnasio.", "Obwohl ich müde bin, gehe ich ins Fitnessstudio.", ["Aunque", "A pesar de", "Así que", "Ya que"]),
+          mc("No voy a la fiesta ___ tengo que trabajar.", "Ich gehe nicht zur Party, da ich arbeiten muss.", ["ya que", "así que", "aunque", "sin embargo"]),
+          mc("Vivo en Palma, ___, en Mallorca.", "Ich wohne in Palma, das heißt auf Mallorca.", ["es decir", "sin embargo", "aunque", "por lo tanto"]),
+          mc("___, el viaje fue muy bonito.", "Zusammenfassend war die Reise sehr schön.", ["En resumen", "A menos que", "Sin que", "Aunque"]),
+          ty("einerseits = por un ___", "einerseits", ["lado"]),
+          od("Andererseits ist es sehr teuer.", "Por otro lado, es muy caro."),
+      ])
+
+
 def main():
     out = Path(__file__).resolve().parent.parent / "data" / "grammar.json"
     import sys
