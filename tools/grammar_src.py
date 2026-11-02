@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Grammatik-Themen und Übungen (Stand Lesson 28). Erzeugt data/grammar.json.
+"""Grammatik-Themen und Übungen (Stand Lesson 32). Erzeugt data/grammar.json.
 
 Übungstypen:
   mc    – Lücke mit Auswahl. opts[0] ist richtig (die App mischt).
@@ -370,6 +370,29 @@ topic("conect", "Konnektoren (Satzverbinder)", [28],
           mc("___, el viaje fue muy bonito.", "Zusammenfassend war die Reise sehr schön.", ["En resumen", "A menos que", "Sin que", "Aunque"]),
           ty("einerseits = por un ___", "einerseits", ["lado"]),
           od("Andererseits ist es sehr teuer.", "Por otro lado, es muy caro."),
+      ])
+
+
+topic("perfecto", "Pretérito perfecto (he hablado)", [32],
+      "<p>Bildung: <b>haber</b> im Präsens + <b>Partizip</b>: he, has, ha, hemos, habéis, han + habl<b>ado</b> / com<b>ido</b> / viv<b>ido</b>.</p>"
+      "<p>Verwendung: Abgeschlossenes in einem noch nicht beendeten Zeitraum (<i>hoy, esta mañana, esta semana, este año</i>) und Erfahrungen ohne festen Zeitpunkt "
+      "(<i>ya, todavía no, alguna vez, nunca, muchas veces</i>).</p>"
+      "<p>Unregelmäßig: abrir → <b>abierto</b>, decir → <b>dicho</b>, escribir → <b>escrito</b>, hacer → <b>hecho</b>, morir → <b>muerto</b>, poner → <b>puesto</b>, "
+      "romper → <b>roto</b>, ver → <b>visto</b>, volver → <b>vuelto</b>, cubrir → <b>cubierto</b>.</p>"
+      "<p>Reflexiv: Pronomen vor haber – <i>Hoy <b>me he</b> levantado a las siete.</i> Das Partizip bleibt unverändert.</p>",
+      [
+          mc("Hoy ___ hablado con mi profesora.", "Heute habe ich mit meiner Lehrerin gesprochen.", ["he", "ha", "hemos", "estoy"]),
+          mc("¿___ comido paella alguna vez?", "Hast du schon einmal Paella gegessen?", ["Has", "Ha", "Habéis", "Eres"]),
+          mc("Esta semana nosotros ___ trabajado mucho.", "Diese Woche haben wir viel gearbeitet.", ["hemos", "habemos", "han", "habéis"]),
+          mc("¿Quién ha ___ la ventana?", "Wer hat das Fenster geöffnet?", ["abierto", "abrido", "abrito", "abierta"], "abrir → abierto (unregelmäßig)."),
+          mc("Todavía no he ___ los deberes.", "Ich habe die Hausaufgaben noch nicht gemacht.", ["hecho", "hacido", "hacho", "dicho"]),
+          mc("Juan ha ___ a casa.", "Juan ist nach Hause zurückgekehrt.", ["vuelto", "volvido", "vuelvo", "volto"]),
+          mc("Esta mañana no ___ he duchado.", "Heute Morgen habe ich nicht geduscht.", ["me", "se", "te", "nos"], "Reflexivpronomen steht vor haber."),
+          ty("escribir → Partizip", "geschrieben", ["escrito"]),
+          ty("poner (vosotros) → Perfekt", "ihr habt gelegt/gestellt", ["habéis puesto", "habeis puesto"]),
+          ty("ver (ustedes) → Perfekt", "Sie haben gesehen", ["han visto"]),
+          od("Ich habe in Berlin gewohnt.", "He vivido en Berlín."),
+          od("Heute bin ich um sieben aufgestanden.", "Hoy me he levantado a las siete."),
       ])
 
 
