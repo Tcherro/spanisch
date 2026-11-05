@@ -31,6 +31,25 @@ async function loadData() {
   for (const t of D.grammar) for (const it of t.items) { it.topic = t.id; D.items[it.id] = it; }
   D.maxLesson = Math.max(...D.vocab.map(x => x.l));
   try { D.mn = await getJSON('data/mnemonics.json'); } catch (e) { D.mn = D.mn || {}; }
+  try { D.focus = await getJSON('data/focus.json'); } catch (e) { D.focus = D.focus || { words: [], grammar: [] }; }
+}
+
+/* Fokus aus den Claude-Gesprächen: einmal je Update die betroffenen Karten als Fehler werten und sofort fällig stellen. */
+function applyFocus() {
+  const f = D.focus;
+  if (!f || !f.updated || S.focusSeen === f.updated) return 0;
+  let n = 0;
+  for (const w of f.words || []) {
+    if (!w.id || !D.byId[w.id]) continue;
+    for (const d of ['de', 'es']) {
+      const c = S.cards[`v:${w.id}:${d}`] || (S.cards[`v:${w.id}:${d}`] = { b: 0, due: 0, n: 0, w: 0, r: 0 });
+      c.w++; c.b = Math.min(c.b, 1); c.due = NOW();
+    }
+    n++;
+  }
+  for (const g of f.grammar || []) for (const it of Object.values(D.items)) if (it.topic === g.id) { const c = S.cards['g:' + it.id]; if (c) c.due = NOW(); }
+  S.focusSeen = f.updated; save();
+  return n;
 }
 
 /* ---------- Spielmechanik: Punkte, Leiter, Rang, Sound ---------- */
@@ -615,18 +634,39 @@ function finish() {
 }
 
 /* ---------- Sprechen: Dialoge + Claude ---------- */
+const PERSONAS = [
+  ['vecina', 'Carmen, meine Nachbarin in Palma (um die 60, Rentnerin, herzlich und neugierig). Wir treffen uns im Treppenhaus; sie fragt nach Familie, Kindern, Arbeit und dem Wochenende und erzählt von ihrem Enkel und ihrem Garten.'],
+  ['camarero', 'Toni, Kellner in einer kleinen Bar in Santa Catalina. Ich trinke dort meinen Café; er plaudert über das Wetter, den RCD Mallorca, Essen und was in Palma los ist.'],
+  ['taxista', 'Paco, Taxifahrer am Flughafen Palma. Er fährt mich nach Hause, fragt, woher ich komme und wie die Reise war, und erzählt von Verkehr, Touristen und seiner Familie.'],
+  ['colega', 'Lucía, eine Kollegin aus Madrid, die bei einem Kunden mit mir im Projekt arbeitet. Smalltalk in der Kaffeepause: Arbeit, Reisen, Pläne, Hobbys.'],
+  ['madre', 'Marta, Mutter eines Kindes aus der Schule meines Sohnes. Wir warten beim Abholen; es geht um Kinder, Geburtstage, Freizeit und Pläne fürs Wochenende.'],
+  ['puerto', 'Joan, ein älterer Mallorquiner, der im Hafen von Portals sein Boot pflegt. Er erzählt vom Meer, von Ausflügen und der Insel früher und fragt, was mir an Mallorca gefällt.'],
+  ['medica', 'Doctora Ruiz, Hausärztin im Centro de Salud. Ein kurzer Termin: Sie fragt freundlich, wie es mir geht, was mir fehlt und gibt einfache Ratschläge (Sie-Form).']
+];
+let PERSONA = null;
+const pickPersona = () => { const c = PERSONAS.filter(p => !PERSONA || p[0] !== PERSONA[0]); PERSONA = pick(c); return PERSONA; };
+
 function renderTalk() {
+  if (!PERSONA) pickPersona();
+  const fw = (D.focus?.words || []).filter(w => w.id).length;
   view().innerHTML = `<h1>Sprechen</h1>
     <h2 style="margin-top:14px">Gespräch mit Claude</h2>
-    <p class="muted small">Startet ein Rollenspiel in der Claude-App, abgestimmt auf deinen Wortschatz, deine Fehler und die aktuelle Grammatik. Braucht Internet. In Claude dann den Sprachmodus antippen.</p>
-    <div class="set"><label for="cs">Thema</label><select id="cs"><option value="free">Freies Gespräch über deinen Alltag</option>${D.scenes.map(s => `<option value="${s.id}">${esc(s.title)}</option>`).join('')}</select>
+    <p class="muted small">Live-Gespräch im Sprachmodus der Claude-App, abgestimmt auf deine aktuelle Lektion, Grammatik und schwachen Wörter. Korrektur direkt, mit Erklärung bei größeren Fehlern. Zum Beenden „terminamos“ sagen. Fehler und neue Wörter übernimmt das Montags-Update automatisch in Vokabelliste und App.</p>
+    <div class="set"><label for="cs">Thema</label><select id="cs"><option value="free">Freies Gespräch</option>${D.scenes.map(s => `<option value="${s.id}">${esc(s.title)}</option>`).join('')}</select>
+    <div id="pers" class="muted small" style="margin:8px 0"></div>
+    ${fw ? `<p class="muted small">Im Fokus aus deinen Gesprächen: ${fw} Wörter</p>` : ''}
     <button class="cta" id="claude">In Claude öffnen</button><button class="cta ghost" id="copy">Nur Prompt kopieren</button>
     <details style="margin-top:10px"><summary class="muted small">Prompt ansehen</summary><div class="pre" id="pp"></div></details></div>
     <h2 id="dlgs">Dialoge nachsprechen</h2>
     <p class="muted small">Funktioniert offline. Die andere Person spricht, du antwortest laut.</p>
     ${D.scenes.map(s => { const cs = s.lines.map((l, i) => card(`d:${s.id}:${i}`)).filter(Boolean); const done = cs.filter(c => c.b >= 2).length, tot = s.lines.filter(l => l.w === 'B').length;
       return `<button class="row" data-sc="${s.id}"><div class="grow"><h3>${esc(s.title)}</h3><div class="muted small">${esc(s.setting)}</div></div><span class="muted small">${done}/${tot}</span><span class="chev">›</span></button>`; }).join('')}`;
-  const upd = () => { $('#pp').textContent = claudePrompt($('#cs').value); };
+  const upd = () => {
+    const free = $('#cs').value === 'free';
+    $('#pers').innerHTML = free ? `Heute: ${esc(PERSONA[1].split(',')[0])} <button class="b-plain" id="np" type="button" style="margin-left:8px">Andere Person</button>` : '';
+    if (free) $('#np').onclick = () => { pickPersona(); upd(); };
+    $('#pp').textContent = claudePrompt($('#cs').value);
+  };
   $('#cs').onchange = upd; upd();
   $('#copy').onclick = async () => { await copy(claudePrompt($('#cs').value)); toast('Prompt kopiert. In Claude einfügen.'); };
   $('#claude').onclick = async () => {
@@ -634,6 +674,7 @@ function renderTalk() {
     await copy(p);
     if (!navigator.onLine) return toast('Offline: Prompt ist kopiert, später in Claude einfügen');
     window.open('https://claude.ai/new?q=' + encodeURIComponent(p), '_blank');
+    if ($('#cs').value === 'free') { pickPersona(); setTimeout(upd, 500); }
   };
   view().querySelectorAll('[data-sc]').forEach(b => b.onclick = () => playDialog(D.scenes.find(s => s.id === b.dataset.sc)));
 }
@@ -641,19 +682,31 @@ async function copy(t) { try { await navigator.clipboard.writeText(t); } catch (
 
 function claudePrompt(sceneId) {
   const sc = D.scenes.find(s => s.id === sceneId);
-  const weak = D.vocab.map(v => ({ v, s: Math.max(weakness(card(`v:${v.id}:de`)), weakness(card(`v:${v.id}:es`))) })).filter(x => x.s > 1).sort((a, b) => b.s - a.s).slice(0, 12).map(x => x.v.es);
-  const fresh = D.vocab.filter(isNew).slice(0, 14).map(v => v.es);
-  const recentL = D.vocab.filter(v => v.l >= D.maxLesson - 1 && !isNew(v)).slice(0, 10).map(v => v.es);
-  const topics = D.grammar.filter(t => t.lessons.some(l => l >= D.maxLesson - 6)).map(t => t.title);
-  const words = [...new Set([...fresh, ...weak, ...recentL])].slice(0, 30);
+  const L = D.maxLesson;
+  const vw = v => Math.max(weakness(card(`v:${v.id}:de`)), weakness(card(`v:${v.id}:es`)));
+  const talkWeak = (D.focus?.words || []).slice(0, 10).map(w => w.es);
+  const weak = D.vocab.map(v => ({ v, s: vw(v) })).filter(x => x.s > 1).sort((a, b) => b.s - a.s).slice(0, 10).map(x => x.v.es);
+  const fresh = D.vocab.filter(isNew).slice(0, 12).map(v => v.es);
+  const recentL = D.vocab.filter(v => v.l >= L - 1 && !isNew(v)).slice(0, 8).map(v => v.es);
+  const words = [...new Set([...talkWeak, ...fresh, ...weak, ...recentL])].slice(0, 30);
+  const known = D.grammar.filter(t => Math.min(...t.lessons) <= L);
+  const newest = known.filter(t => Math.max(...t.lessons) >= L - 4).map(t => t.title);
+  const gFocus = (D.focus?.grammar || []).map(g => (D.grammar.find(t => t.id === g.id) || {}).title).filter(Boolean);
+  const role = sc ? 'Rollenspiel: ' + sc.claude : 'Du spielst ' + PERSONA[1];
   return [
-    'Du bist meine geduldige Spanischlehrerin aus Palma. Ich bin Anfänger (A1, Lektion ' + D.maxLesson + '), Deutscher, lebe auf Mallorca.',
-    sc ? 'Rollenspiel: ' + sc.claude : 'Freies Gespräch über meinen Alltag auf Mallorca, Familie, Arbeit und das Wochenende.',
-    'Regeln: Sprich nur Spanisch, kurze Sätze, langsam, Präsens und "ir a + Infinitiv". Stell mir immer genau eine Frage und warte auf meine Antwort.',
-    'Wenn ich einen Fehler mache, schreib nach deiner Antwort eine Zeile "Korrektur:" auf Deutsch mit der richtigen Form. Sonst keine Erklärungen.',
-    'Baue möglichst diese Wörter ein: ' + words.join(', ') + '.',
-    'Grammatik, die ich gerade übe: ' + topics.join(', ') + '.',
-    'Nach etwa 10 Wechseln: kurzes Feedback auf Deutsch mit meinen 3 häufigsten Fehlern. ¡Empezamos!'
+    role,
+    'Wir sprechen per Sprachmodus, ganz natürlich wie im echten Leben. Über mich: Deutscher, lebe mit meiner Familie in Palma, lerne Spanisch im Kurs, aktuell Lektion ' + L + '.',
+    'Mein Stand. Diese Grammatik hatte ich schon: ' + known.map(t => t.title).join(', ') + '. Ganz neu: ' + newest.join(', ') + (gFocus.length ? '. Damit hatte ich in Gesprächen Probleme: ' + gFocus.join(', ') : '') + '. Nutze vor allem diese Strukturen, in kurzen, klaren Sätzen und normalem, eher langsamem Tempo. Stell Fragen so, dass ich das Neue anwenden muss. Wenn ich sicher antworte, darfst du etwas anspruchsvoller werden.',
+    'Bau nach und nach diese Wörter ein: ' + words.join(', ') + '.',
+    'Gesprächsführung: Bleib in deiner Rolle, reagiere auf das, was ich sage, erzähl auch kurz von dir und stell pro Beitrag genau eine Frage. Wenn ich nicht weiterweiß, hilf mit einem Satzanfang auf Spanisch. Das Gespräch selbst bleibt immer auf Spanisch.',
+    'Korrektur wie eine gute Lehrerin: Wenn ich einen Fehler mache, korrigiere direkt am Anfang deiner nächsten Antwort, kurz auf Deutsch: "Korrektur: <was ich gesagt habe> – richtig: <richtige Form>". Bei größeren Fehlern (Verbform, Zeit, ser/estar, Wortstellung, falsches Wort, Genus) erklär in ein bis zwei Sätzen auf Deutsch, warum es so heißt. Freundlich und ermutigend, nie belehrend, dann weiter auf Spanisch. Ignoriere Akzente, Satzzeichen und Schreibweise, ich spreche und das wird transkribiert.',
+    'Ende: Ich beende mit "terminamos". Dann verabschiede dich kurz in deiner Rolle und gib mir auf Deutsch ein kurzes Feedback: was gut lief und meine 3 wichtigsten Fehler mit der Regel dazu. Schreib danach genau diesen Block (Wörter in Grundform, mehrere mit Semikolon trennen, leer lassen wenn nichts):',
+    '#LERNBERICHT-ES datum=<heutiges Datum JJJJ-MM-TT> lektion=' + L,
+    'FEHLER: <spanisch> = <deutsch>; ...  (Wörter oder Wendungen, die ich falsch benutzt oder vergeblich gesucht habe)',
+    'NEU: <spanisch> = <deutsch>; ...  (Wörter, die ich im Gespräch neu gebraucht oder gelernt habe)',
+    'GRAMMATIK: <Thema>; ...  (Grammatikthemen mit Fehlern, benannt wie in meiner Liste oben, z. B. ser oder estar)',
+    '#ENDE',
+    '¡Empezamos! Fang du an.'
   ].join('\n');
 }
 
@@ -796,7 +849,7 @@ async function checkUpdate(manual) {
     const m = await (await fetch('data/meta.json', { cache: 'no-store' })).json();
     if (m.version !== D.meta.version) {
       const reg = await navigator.serviceWorker?.getRegistration(); reg?.update();
-      await loadData();
+      await loadData(); applyFocus();
       const n = D.vocab.filter(isNew).length;
       toast(`Neue Inhalte geladen${n ? ': ' + n + ' neue Vokabeln' : ''}`); if (TAB === 'home' && !SES) renderHome();
     } else if (manual) toast('Du bist auf dem neuesten Stand');
@@ -810,6 +863,7 @@ async function checkUpdate(manual) {
   catch (e) { view().innerHTML = '<p class="loading">Inhalte konnten nicht geladen werden. Einmal mit Internet öffnen, danach läuft die App offline.</p>'; return; }
   if (S.seenVersion && S.seenVersion !== D.meta.version) { const n = D.vocab.filter(isNew).length; if (n) setTimeout(() => toast(`Neu diese Woche: ${n} Vokabeln`), 600); }
   S.seenVersion = D.meta.version; save();
+  { const nf = applyFocus(); if (nf) setTimeout(() => toast(`Aus deinen Gesprächen: ${nf} Wörter zum Wiederholen`), 3800); }
   go('home');
   navigator.storage?.persist?.();
   if ('serviceWorker' in navigator) {
