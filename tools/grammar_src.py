@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Grammatik-Themen und Übungen (Stand Lesson 32). Erzeugt data/grammar.json.
+"""Grammatik-Themen und Übungen (Stand Lesson 33). Erzeugt data/grammar.json.
 
 Übungstypen:
   mc    – Lücke mit Auswahl. opts[0] ist richtig (die App mischt).
@@ -373,13 +373,15 @@ topic("conect", "Konnektoren (Satzverbinder)", [28],
       ])
 
 
-topic("perfecto", "Pretérito perfecto (he hablado)", [32],
+topic("perfecto", "Pretérito perfecto (he hablado)", [32, 33],
       "<p>Bildung: <b>haber</b> im Präsens + <b>Partizip</b>: he, has, ha, hemos, habéis, han + habl<b>ado</b> / com<b>ido</b> / viv<b>ido</b>.</p>"
       "<p>Verwendung: Abgeschlossenes in einem noch nicht beendeten Zeitraum (<i>hoy, esta mañana, esta semana, este año</i>) und Erfahrungen ohne festen Zeitpunkt "
       "(<i>ya, todavía no, alguna vez, nunca, muchas veces</i>).</p>"
       "<p>Unregelmäßig: abrir → <b>abierto</b>, decir → <b>dicho</b>, escribir → <b>escrito</b>, hacer → <b>hecho</b>, morir → <b>muerto</b>, poner → <b>puesto</b>, "
       "romper → <b>roto</b>, ver → <b>visto</b>, volver → <b>vuelto</b>, cubrir → <b>cubierto</b>.</p>"
-      "<p>Reflexiv: Pronomen vor haber – <i>Hoy <b>me he</b> levantado a las siete.</i> Das Partizip bleibt unverändert.</p>",
+      "<p>Reflexiv: Pronomen vor haber – <i>Hoy <b>me he</b> levantado a las siete.</i> Das Partizip bleibt unverändert.</p>"
+      "<p>Negation: Stehen <b>nunca, tampoco, nada, nadie</b> nach dem Verb, braucht es zusätzlich <b>no</b> davor: <i>No he estado nunca aquí</i> = <i>Nunca he estado aquí</i>; <i>No ha venido nadie</i> = <i>Nadie ha venido</i>. "
+      "<b>ya</b> und <b>todavía</b> können vor oder nach dem Verb stehen: <i>Todavía no he comido</i> = <i>No he comido todavía</i>.</p>",
       [
           mc("Hoy ___ hablado con mi profesora.", "Heute habe ich mit meiner Lehrerin gesprochen.", ["he", "ha", "hemos", "estoy"]),
           mc("¿___ comido paella alguna vez?", "Hast du schon einmal Paella gegessen?", ["Has", "Ha", "Habéis", "Eres"]),
@@ -393,6 +395,17 @@ topic("perfecto", "Pretérito perfecto (he hablado)", [32],
           ty("ver (ustedes) → Perfekt", "Sie haben gesehen", ["han visto"]),
           od("Ich habe in Berlin gewohnt.", "He vivido en Berlín."),
           od("Heute bin ich um sieben aufgestanden.", "Hoy me he levantado a las siete."),
+          mc("___ ha llamado nadie.", "Niemand hat angerufen.", ["No", "Nunca", "Ya", "Sí"], "nadie nach dem Verb → zusätzlich no davor."),
+          mc("Nadie ___ venido.", "Niemand ist gekommen.", ["ha", "no ha", "han", "es"], "nadie vor dem Verb → kein zusätzliches no."),
+          mc("No he fumado ___.", "Ich habe nie geraucht.", ["nunca", "siempre", "ya", "también"]),
+          mc("¿Has comprado el regalo? – Sí, ___ lo he comprado.", "Hast du das Geschenk gekauft? – Ja, ich habe es schon gekauft.", ["ya", "todavía", "nunca", "nadie"]),
+          mc("¿Has llamado a tu madre? – No, todavía no la ___ llamado.", "Hast du deine Mutter angerufen? – Nein, ich habe sie noch nicht angerufen.", ["he", "ha", "has", "estoy"]),
+          mc("Esta semana ha ___ mucho.", "Diese Woche hat es viel geregnet.", ["llovido", "llovida", "llueve", "lloviendo"]),
+          mc("Yo ___ he comido tampoco.", "Ich habe auch nicht gegessen.", ["no", "ya", "nunca", "nada"], "tampoco nach dem Verb → no davor."),
+          ty("devolver (yo) → Perfekt", "ich habe zurückgegeben", ["he devuelto"], "devolver → devuelto (wie volver)."),
+          ty("romper (él) → Perfekt", "er hat zerbrochen", ["ha roto"], "romper → roto (unregelmäßig)."),
+          od("Ich bin noch nie in Paris gewesen.", "No he estado nunca en París."),
+          od("Ich habe die Stiefel zurückgegeben.", "He devuelto las botas."),
       ])
 
 
