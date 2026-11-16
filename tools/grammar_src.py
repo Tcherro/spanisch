@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Grammatik-Themen und Übungen (Stand Lesson 33). Erzeugt data/grammar.json.
+"""Grammatik-Themen und Übungen (Stand Lesson 35). Erzeugt data/grammar.json.
 
 Übungstypen:
   mc    – Lücke mit Auswahl. opts[0] ist richtig (die App mischt).
@@ -373,7 +373,7 @@ topic("conect", "Konnektoren (Satzverbinder)", [28],
       ])
 
 
-topic("perfecto", "Pretérito perfecto (he hablado)", [32, 33],
+topic("perfecto", "Pretérito perfecto (he hablado)", [32, 33, 34, 35],
       "<p>Bildung: <b>haber</b> im Präsens + <b>Partizip</b>: he, has, ha, hemos, habéis, han + habl<b>ado</b> / com<b>ido</b> / viv<b>ido</b>.</p>"
       "<p>Verwendung: Abgeschlossenes in einem noch nicht beendeten Zeitraum (<i>hoy, esta mañana, esta semana, este año</i>) und Erfahrungen ohne festen Zeitpunkt "
       "(<i>ya, todavía no, alguna vez, nunca, muchas veces</i>).</p>"
@@ -381,7 +381,9 @@ topic("perfecto", "Pretérito perfecto (he hablado)", [32, 33],
       "romper → <b>roto</b>, ver → <b>visto</b>, volver → <b>vuelto</b>, cubrir → <b>cubierto</b>.</p>"
       "<p>Reflexiv: Pronomen vor haber – <i>Hoy <b>me he</b> levantado a las siete.</i> Das Partizip bleibt unverändert.</p>"
       "<p>Negation: Stehen <b>nunca, tampoco, nada, nadie</b> nach dem Verb, braucht es zusätzlich <b>no</b> davor: <i>No he estado nunca aquí</i> = <i>Nunca he estado aquí</i>; <i>No ha venido nadie</i> = <i>Nadie ha venido</i>. "
-      "<b>ya</b> und <b>todavía</b> können vor oder nach dem Verb stehen: <i>Todavía no he comido</i> = <i>No he comido todavía</i>.</p>",
+      "<b>ya</b> und <b>todavía</b> können vor oder nach dem Verb stehen: <i>Todavía no he comido</i> = <i>No he comido todavía</i>.</p>"
+      "<p>gustar im Perfekt: Das Verb richtet sich nach dem, was gefällt – <i>¿Te <b>ha</b> gustado la película?</i> / <i>¿Te <b>han</b> gustado las películas?</i> "
+      "Ebenso: <i>Lo hemos pasado bien.</i> (pasarlo bien = sich amüsieren).</p>",
       [
           mc("Hoy ___ hablado con mi profesora.", "Heute habe ich mit meiner Lehrerin gesprochen.", ["he", "ha", "hemos", "estoy"]),
           mc("¿___ comido paella alguna vez?", "Hast du schon einmal Paella gegessen?", ["Has", "Ha", "Habéis", "Eres"]),
@@ -406,6 +408,16 @@ topic("perfecto", "Pretérito perfecto (he hablado)", [32, 33],
           ty("romper (él) → Perfekt", "er hat zerbrochen", ["ha roto"], "romper → roto (unregelmäßig)."),
           od("Ich bin noch nie in Paris gewesen.", "No he estado nunca en París."),
           od("Ich habe die Stiefel zurückgegeben.", "He devuelto las botas."),
+          mc("¿Te ___ gustado la película?", "Hat dir der Film gefallen?", ["ha", "has", "han", "he"], "gustar richtet sich nach la película (Singular)."),
+          mc("¿Te ___ gustado las películas?", "Haben dir die Filme gefallen?", ["han", "ha", "has", "habéis"], "gustar richtet sich nach las películas (Plural)."),
+          mc("Ayer no, pero hoy ___ he despedido de Ana.", "Heute habe ich mich von Ana verabschiedet.", ["me", "se", "te", "nos"], "despedirse: Pronomen vor haber."),
+          mc("Esta tarde mi padre se ha ___ en la calle.", "Heute Nachmittag ist mein Vater auf der Straße hingefallen.", ["caído", "caido", "caer", "caí"], "caer → caído (mit Akzent)."),
+          mc("El director me ha ___ muy mala cara.", "Der Direktor hat mich sehr missmutig angeschaut.", ["puesto", "ponido", "poniendo", "pongo"]),
+          mc("Hoy he ___ 25 informes.", "Heute habe ich 25 Berichte geschrieben.", ["escrito", "escribido", "escribo", "escrita"]),
+          ty("pasarlo bien (nosotros) → Perfekt", "wir haben uns gut amüsiert", ["lo hemos pasado bien"]),
+          ty("despedirse (yo) → Perfekt", "ich habe mich verabschiedet", ["me he despedido"]),
+          od("Ich hatte einen schrecklichen Tag.", "He tenido un día horrible."),
+          od("Ich bin zu spät zur Bank gekommen.", "He llegado tarde al banco."),
       ])
 
 
