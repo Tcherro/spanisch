@@ -373,7 +373,7 @@ topic("conect", "Konnektoren (Satzverbinder)", [28],
       ])
 
 
-topic("perfecto", "Pretérito perfecto (he hablado)", [32, 33, 34, 35],
+topic("perfecto", "Pretérito perfecto (he hablado)", [32, 33, 34, 35, 36],
       "<p>Bildung: <b>haber</b> im Präsens + <b>Partizip</b>: he, has, ha, hemos, habéis, han + habl<b>ado</b> / com<b>ido</b> / viv<b>ido</b>.</p>"
       "<p>Verwendung: Abgeschlossenes in einem noch nicht beendeten Zeitraum (<i>hoy, esta mañana, esta semana, este año</i>) und Erfahrungen ohne festen Zeitpunkt "
       "(<i>ya, todavía no, alguna vez, nunca, muchas veces</i>).</p>"
@@ -418,6 +418,10 @@ topic("perfecto", "Pretérito perfecto (he hablado)", [32, 33, 34, 35],
           ty("despedirse (yo) → Perfekt", "ich habe mich verabschiedet", ["me he despedido"]),
           od("Ich hatte einen schrecklichen Tag.", "He tenido un día horrible."),
           od("Ich bin zu spät zur Bank gekommen.", "He llegado tarde al banco."),
+          mc("Este año mis padres se ___ mudado a Grecia.", "Dieses Jahr sind meine Eltern nach Griechenland umgezogen.", ["han", "ha", "hemos", "son"], "mudarse: Pronomen se vor haber, Plural → han."),
+          mc("¿Ya ___ ayudado a tu hermano con la mudanza?", "Hast du deinem Bruder schon beim Umzug geholfen?", ["has", "ha", "he", "eres"]),
+          ty("volver (yo) → Perfekt", "ich bin zurückgekehrt", ["he vuelto"], "volver → vuelto (unregelmäßig)."),
+          od("Ich bin über Frankfurt zurückgeflogen.", "He vuelto por Fráncfort."),
       ])
 
 
