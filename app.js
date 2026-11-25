@@ -292,6 +292,7 @@ function renderHome() {
   const greet = hour < 12 ? '¡Buenos días, Christian!' : hour < 20 ? '¡Buenas tardes, Christian!' : '¡Buenas noches, Christian!';
   const pts = S.points || 0, rk = rankOf(pts), nx = nextRank(pts);
   if (st.focus === 'speak') st.focus = 'mix';
+  if (st.focus === 'sent') st.focus = 'vocab';
   view().innerHTML = `
     <section class="marquee">
       <div class="greet">${greet}</div>
@@ -308,7 +309,7 @@ function renderHome() {
       <div class="label">Spielzeit</div>
       ${seg('minutes', [[5, '5 Min'], [10, '10 Min'], [15, '15 Min'], [20, '20 Min'], [0, 'Offen']], st.minutes)}
       <div class="label">Spiel</div>
-      ${seg('focus', [['mix', 'Mix'], ['sent', 'Sätze'], ['vocab', 'Vokabeln'], ['grammar', 'Grammatik']], st.focus)}
+      ${seg('focus', [['mix', 'Mix'], ['vocab', 'Vokabeln'], ['grammar', 'Grammatik']], st.focus)}
       <div class="label">Stoff</div>
       ${seg('scope', [['all', 'Alles'], ['recent', `Lektion ${D.maxLesson - 3}–${D.maxLesson}`], ['new', 'Neu']], st.scope)}
       <button class="bigbtn" id="start" aria-label="Spiel starten">¡Vamos!<small>Start</small></button>
@@ -366,11 +367,10 @@ function updateHud() {
 
 function chooseKind() {
   if (SES.topic) return 'grammar';
-  if (SES.focus === 'vocab') return 'vocab';
-  if (SES.focus === 'grammar') return 'grammar';
-  if (SES.focus === 'sent') return Math.random() < .85 ? 'sent' : 'shadow';
   const r = Math.random();
-  return r < 0.45 ? 'sent' : r < 0.72 ? 'vocab' : r < 0.92 ? 'grammar' : 'shadow';
+  if (SES.focus === 'vocab' || SES.focus === 'sent') return r < 0.5 ? 'sent' : 'vocab';
+  if (SES.focus === 'grammar') return 'grammar';
+  return r < 0.4 ? 'vocab' : r < 0.7 ? 'sent' : 'grammar';
 }
 
 function nextItem() {
@@ -428,7 +428,7 @@ function pickVocab() {
     v = pick(w.slice(0, 15)).v;
   }
   SES.newUsed++;
-  return { v, dir: dirPref === 'mix' ? (v.es.split(' ').length > 4 ? 'es' : pick(['de', 'es'])) : dirPref };
+  return { v, dir: dirPref === 'mix' ? (v.es.split(' ').length > 3 ? 'de' : pick(['de', 'es'])) : dirPref };
 }
 
 function pickGrammar() {
@@ -483,65 +483,33 @@ function showVocab(v, dir) {
   const tag = isNew(v) ? '<span class="tag new">neu</span>' : '';
   const src = v.l ? `Lektion ${v.l}` : (v.src || 'Grundwortschatz');
   const reel = (text, cls = '') => `<div class="reel spin"><span class="strip"><div class="prompt ${cls} ${text.length > 28 ? 'long' : ''}">${esc(text)}</div></span></div>`;
-  const gained = ok => ok && SES.last ? `<span class="pts">+${SES.last}</span>` : '';
-  const nextBtn = () => { $('#nx').onclick = nextItem; $('#nx').focus(); };
-  if (dir === 'es') {
-    // Spanisch → Deutsch: ohne Antwortvorschläge – selbst überlegen, aufdecken, ehrlich bewerten
-    shell(`<div class="card"><div class="kind">Was heißt das? ${tag}<span style="margin-left:auto">${esc(src)}</span></div>
-      <div class="pline">${reel(v.es, 'es')}${spkBtn(v.es)}</div><p class="sub small">Sag die Bedeutung laut, dann aufdecken.</p>${mnButton(v.id, false, 'Tipp: Eselsbrücke (halbe Punkte)')}</div>
-      <div id="fb"><div class="actions"><button class="b-main" id="rev">Aufdecken</button></div></div>`);
-    say(v.es);
-    $('#rev').onclick = () => {
-      $('#fb').innerHTML = `<div class="feedback ok"><div class="sol">${esc(v.de)}</div>${v.n ? `<div class="small">${esc(v.n)}</div>` : ''}</div>
-        <div class="actions"><button class="b-bad" data-g="0">Nicht gewusst</button><button class="b-mid" data-g="1">Fast</button><button class="b-ok" data-g="2">Gewusst</button></div>`;
-      view().querySelectorAll('[data-g]').forEach(b => b.onclick = () => {
-        const g = +b.dataset.g; grade(key, g > 0, g === 1); afterAnswer(g > 0, { kind: 'vocab', v, dir }, g === 1);
-        if (g === 0 && mnOf(v.id)) { $('#fb').innerHTML = `<div class="feedback bad"><b>Merk dir das</b><div class="sol es">${esc(v.es)} = ${esc(v.de)}</div>${mnBoxHTML(v.id)}</div><div class="actions"><button class="b-main" id="nx">Weiter</button></div>`; nextBtn(); }
-        else nextItem();
-      });
-    };
-    return;
-  }
   const isSent = !/ \/ /.test(v.es) && (/[.?!]$/.test(v.es.trim()) || /^[¿¡]/.test(v.es.trim()) || v.es.split(' ').length >= 5);
-  if (isSent) { showSentence({ id: 'v' + v.id, es: v.es, de: v.de, alt: [], t: src, vocab: v }, key); return; }
-  const long = / \/ .* \/ /.test(v.es) || v.es.split(' ').length > 6;
-  if (long) {
-    shell(`<div class="card"><div class="kind">Sag es auf Spanisch ${tag}<span style="margin-left:auto">${esc(src)}</span></div>
-      ${reel(v.de)}<p class="sub small">Sprich laut, dann aufdecken.</p>${mnButton(v.id, false, 'Tipp: Eselsbrücke (halbe Punkte)')}</div>
-      <div id="fb"><div class="actions"><button class="b-main" id="rev">Aufdecken</button></div></div>`);
-    $('#rev').onclick = () => {
-      say(v.es);
-      $('#fb').innerHTML = `<div class="feedback ok"><div class="pline"><div class="sol es">${esc(v.es)}</div>${spkBtn(v.es)}</div>${v.n ? `<div class="small">${esc(v.n)}</div>` : ''}</div>
-        <div class="actions"><button class="b-bad" data-g="0">Nicht gewusst</button><button class="b-mid" data-g="1">Fast</button><button class="b-ok" data-g="2">Gewusst</button></div>`;
-      view().querySelectorAll('[data-g]').forEach(b => b.onclick = () => {
-        const g = +b.dataset.g; grade(key, g > 0, g === 1); afterAnswer(g > 0, { kind: 'vocab', v, dir }, g === 1);
-        if (g === 0 && mnOf(v.id)) { $('#fb').innerHTML = `<div class="feedback bad"><b>Merk dir das</b><div class="sol es">${esc(v.es)}</div>${mnBoxHTML(v.id)}</div><div class="actions"><button class="b-main" id="nx">Weiter</button></div>`; nextBtn(); }
-        else nextItem();
-      });
-    };
-    return;
-  }
-  shell(`<div class="card"><div class="kind">Auf Spanisch ${tag}<span style="margin-left:auto">${esc(src)}</span></div>
-    ${reel(v.de)}${mnButton(v.id, false, 'Tipp: Eselsbrücke (halbe Punkte)')}</div>
-    <form class="answer" id="af"><input id="ai" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" lang="es" enterkeyhint="done" placeholder="Antwort …" aria-label="Antwort auf Spanisch"><button class="go">OK</button></form>
+  if (dir !== 'es' && isSent) { showSentence({ id: 'v' + v.id, es: v.es, de: v.de, alt: [], t: src, vocab: v }, key); return; }
+  const toDe = dir === 'es';
+  const prompt = toDe ? v.es : v.de, sol = toDe ? v.de : v.es;
+  const accepted = toDe
+    ? [...new Set(v.de.split(/\s*[\/;,]\s*/).concat([v.de]).flatMap(x => [x, x.replace(/\(.*?\)/g, ' '), x.replace(/[()]/g, ''), x.replace(/^(der|die|das|ein|eine|einen|sich)\s+/i, '')]))].map(norm).filter(Boolean)
+    : variants(v.es);
+  shell(`<div class="card"><div class="kind">${toDe ? 'Auf Deutsch' : 'Auf Spanisch'} ${tag}<span style="margin-left:auto">${esc(src)}</span></div>
+    <div class="pline">${reel(prompt, toDe ? 'es' : '')}${toDe ? spkBtn(v.es) : ''}</div></div>
+    <form class="answer" id="af"><input id="ai" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" lang="${toDe ? 'de' : 'es'}" enterkeyhint="done" aria-label="Antwort"><button class="go">OK</button></form>
     <div id="fb"><div class="actions"><button class="b-plain" id="idk">Weiß ich nicht</button></div></div>`);
+  if (toDe) say(v.es);
   const inp = $('#ai'); setTimeout(() => inp.focus(), 60);
   const done = (res) => {
     inp.disabled = true; inp.classList.add(res.ok ? 'ok' : 'bad');
     grade(key, res.ok, res.partial); afterAnswer(res.ok, { kind: 'vocab', v, dir }, res.partial);
     say(v.es);
-    $('#fb').innerHTML = `<div class="feedback ${res.ok ? 'ok' : 'bad'}">${gained(res.ok)}<b>${res.ok ? '¡Correcto!' : 'Richtig wäre:'}</b><div class="pline"><div class="sol es">${esc(v.es)}</div>${spkBtn(v.es)}</div>${res.note ? `<div class="small">${esc(res.note)}</div>` : ''}${v.n ? `<div class="small">${esc(v.n)}</div>` : ''}</div>
+    $('#fb').innerHTML = `<div class="feedback ${res.ok ? 'ok' : 'bad'}">${res.ok && SES.last ? `<span class="pts">+${SES.last}</span>` : ''}<b>${res.ok ? '¡Correcto!' : 'Richtig wäre:'}</b><div class="pline"><div class="sol ${toDe ? '' : 'es'}">${esc(sol)}</div>${spkBtn(v.es)}</div>${res.note ? `<div class="small">${esc(res.note)}</div>` : ''}${v.n && !res.ok ? `<div class="small">${esc(v.n)}</div>` : ''}</div>
       ${res.ok ? '' : `<div data-fbmn></div>`}
       <div class="actions">${res.ok ? '' : '<button class="b-plain" id="was">Hatte ich richtig</button>'}<button class="b-main" id="nx">Weiter</button></div>`;
     if (!res.ok) fixMnFeedback(v.id);
-    nextBtn();
+    $('#nx').onclick = nextItem; $('#nx').focus();
     const w = $('#was'); if (w) w.onclick = () => { S.cards[key].w--; S.cards[key].b = 2; S.cards[key].due = NOW() + 2 * DAY; SES.ok++; SES.requeue.pop(); SES.wrongs.pop(); SES.pts += 10; updateHud(); save(); nextItem(); };
   };
-  $('#af').onsubmit = e => { e.preventDefault(); if (!inp.disabled && inp.value.trim()) done(check(inp.value, variants(v.es))); };
+  $('#af').onsubmit = e => { e.preventDefault(); if (!inp.disabled && inp.value.trim()) done(check(inp.value, accepted)); };
   $('#idk').onclick = () => done({ ok: false });
 }
-
-/* Satz-Karte: deutschen Satz sehen, ganzen spanischen Satz schreiben (oder per Diktat sprechen). */
 function showSentence(s, keyOverride) {
   remember(s.id);
   SES.cur = s.vocab ? s.vocab.id : null; SES.hint = false; SES.answered = false;
@@ -550,8 +518,8 @@ function showSentence(s, keyOverride) {
   const sols = [s.es, ...(s.alt || [])];
   shell(`<div class="card"><div class="kind">Sag es als ganzen Satz ${tag}<span style="margin-left:auto">${esc(s.t || '')}</span></div>
     <div class="reel spin"><span class="strip"><div class="prompt long">${esc(s.de)}</div></span></div>
-    ${s.vocab ? mnButton(s.vocab.id, false, 'Tipp: Eselsbrücke (halbe Punkte)') : ''}</div>
-    <form class="answer sentence" id="af"><textarea id="ai" rows="3" autocomplete="off" autocapitalize="sentences" autocorrect="off" spellcheck="false" lang="es" enterkeyhint="done" placeholder="Ganzen Satz auf Spanisch schreiben – oder Mikrofon der Tastatur nutzen" aria-label="Satz auf Spanisch"></textarea></form>
+</div>
+    <form class="answer sentence" id="af"><textarea id="ai" rows="3" autocomplete="off" autocapitalize="sentences" autocorrect="off" spellcheck="false" lang="es" enterkeyhint="done" placeholder="" aria-label="Satz auf Spanisch"></textarea></form>
     <div id="fb"><div class="actions"><button class="b-plain" id="idk">Weiß ich nicht</button><button class="b-main" id="ok">Prüfen</button></div></div>`);
   const inp = $('#ai'); setTimeout(() => inp.focus(), 60);
   inp.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); } });
@@ -577,10 +545,8 @@ function showSentence(s, keyOverride) {
 }
 // Nach falscher Antwort: Eselsbrücke-Knopf in der Karte hervorheben und direkt öffnen lassen
 function fixMnFeedback(id) {
-  const holder = $('[data-fbmn]'); if (holder) holder.remove();
-  view().querySelectorAll('#fb .mnbtn, #fb .mnslot').forEach(x => x.remove());
-  const b = view().querySelector(`.card [data-mn="${id}"]`);
-  if (b) { b.classList.add('pulse'); b.innerHTML = BULB + 'Eselsbrücke ansehen'; }
+  const holder = $('[data-fbmn]');
+  if (holder) holder.outerHTML = mnOf(id) ? mnBoxHTML(id) : '';
 }
 function accentKeys() { return ''; }
 function bindAccents() {
@@ -609,8 +575,8 @@ function showGrammar(it) {
   if (it.t === 'order') {
     // ganzer Satz statt Wortbausteine
     shell(`<div class="card">${head}<div class="sub">Schreib den ganzen Satz auf Spanisch:</div><div class="prompt long">${esc(it.de)}</div></div>
-      <form class="answer sentence" id="af"><textarea id="ai" rows="3" autocomplete="off" autocapitalize="sentences" autocorrect="off" spellcheck="false" lang="es" enterkeyhint="done" placeholder="Ganzer Satz …" aria-label="Satz auf Spanisch"></textarea></form>
-      <div id="fb"><div class="actions"><button class="b-plain" id="idk">Weiß ich nicht</button><button class="b-main" id="ok">Prüfen</button></div>${rule}</div>`);
+      <form class="answer sentence" id="af"><textarea id="ai" rows="3" autocomplete="off" autocapitalize="sentences" autocorrect="off" spellcheck="false" lang="es" enterkeyhint="done" placeholder="" aria-label="Satz auf Spanisch"></textarea></form>
+      <div id="fb"><div class="actions"><button class="b-plain" id="idk">Weiß ich nicht</button><button class="b-main" id="ok">Prüfen</button></div></div>`);
     const inp = $('#ai'); setTimeout(() => inp.focus(), 60);
     const submit = () => { if (inp.disabled || !inp.value.trim()) return; const r = checkSentence(inp.value, [it.ans]); inp.disabled = true; inp.classList.add(r.ok ? 'ok' : 'bad'); say(it.ans); fin(r.ok, r.partial, it.ans, r.note, inp.value); };
     inp.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); } });
@@ -623,8 +589,8 @@ function showGrammar(it) {
   const solo = isSolo(it.q);
   const accepted = answers.flatMap(a => [a, a.replace(/\s*\/\s*/g, ' '), a.replace(/\s*\/\s*/g, ', ')]).map(norm);
   shell(`<div class="card">${head}${solo ? '<div class="sub">Schreib es auf Spanisch:</div>' : ''}<div class="prompt es long">${esc(it.q)}</div>${it.de ? `<div class="sub">${esc(it.de)}</div>` : ''}${(it.q || '').split('___').length > 2 ? '<div class="sub small">Zwei Lücken: beide Wörter nacheinander eingeben.</div>' : ''}</div>
-    <form class="answer" id="af"><input id="ai" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" lang="es" enterkeyhint="done" placeholder="${solo ? 'Antwort …' : 'Lücke ausfüllen …'}" aria-label="Antwort"><button class="go">OK</button></form>
-    <div id="fb"><div class="actions"><button class="b-plain" id="idk">Weiß ich nicht</button></div>${rule}</div>`);
+    <form class="answer" id="af"><input id="ai" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" lang="es" enterkeyhint="done" placeholder="" aria-label="Antwort"><button class="go">OK</button></form>
+    <div id="fb"><div class="actions"><button class="b-plain" id="idk">Weiß ich nicht</button></div></div>`);
   const inp = $('#ai'); setTimeout(() => inp.focus(), 60);
   const solText = solo || (it.q || '').includes('–') || (it.q || '').includes('→') ? answers[0] : filled(answers[0]);
   $('#af').onsubmit = e => {
