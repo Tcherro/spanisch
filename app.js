@@ -32,9 +32,9 @@ async function loadData() {
   D.maxLesson = Math.max(...D.vocab.map(x => x.l));
   try { D.mn = await getJSON('data/mnemonics.json'); } catch (e) { D.mn = D.mn || {}; }
   try { D.focus = await getJSON('data/focus.json'); } catch (e) { D.focus = D.focus || { words: [], grammar: [] }; }
+  try { D.sentences = (await getJSON('data/sentences.json')).items; } catch (e) { D.sentences = D.sentences || []; }
+  D.sentById = Object.fromEntries(D.sentences.map(x => [x.id, x]));
 }
-
-/* Fokus aus den Claude-Gesprächen: einmal je Update die betroffenen Karten als Fehler werten und sofort fällig stellen. */
 function applyFocus() {
   const f = D.focus;
   if (!f || !f.updated || S.focusSeen === f.updated) return 0;
@@ -161,6 +161,45 @@ function check(input, accepted) {
   for (const v of accepted) if (lev(strip(a), strip(v)) <= (v.length > 8 ? 1 : 0)) return { ok: true, partial: true, note: 'Fast – Tippfehler? Richtig: ' + v };
   return { ok: false };
 }
+
+/* Ganze Sätze prüfen: Wort für Wort, Akzente und Subjektpronomen tolerant, Fehler markiert. */
+const PRON = new Set(['yo', 'tu', 'ella', 'usted', 'nosotros', 'nosotras', 'vosotros', 'vosotras', 'ellos', 'ellas', 'ustedes']);
+const words = s => strip(norm(s)).split(' ').filter(Boolean);
+function dropPron(w) { return w.length > 1 && PRON.has(w[0]) ? w.slice(1) : w; }
+function wordDist(a, b) {
+  const m = a.length, n = b.length; let p = Array.from({ length: n + 1 }, (_, i) => i);
+  for (let i = 1; i <= m; i++) { const c = [i]; for (let j = 1; j <= n; j++) { const same = a[i - 1] === b[j - 1] || (a[i - 1].length > 4 && lev(a[i - 1], b[j - 1]) <= 1); c[j] = Math.min(p[j] + 1, c[j - 1] + 1, p[j - 1] + (same ? 0 : 1)); } p = c; }
+  return p[n];
+}
+// markiert im Lösungssatz die Wörter, die in der Eingabe fehlen oder falsch sind
+function markSolution(sol, input) {
+  const have = words(input);
+  const raw = sol.split(/\s+/);
+  const used = new Array(have.length).fill(false);
+  return raw.map(tok => {
+    const w = strip(norm(tok)); if (!w) return esc(tok);
+    const k = have.findIndex((h, i) => !used[i] && (h === w || (w.length > 4 && lev(h, w) <= 1)));
+    if (k >= 0) { used[k] = true; return esc(tok); }
+    return `<mark>${esc(tok)}</mark>`;
+  }).join(' ');
+}
+function checkSentence(input, sols) {
+  const a = words(input); if (!a.length) return { ok: false };
+  let best = null;
+  for (const s of sols) {
+    const b = words(s);
+    for (const [x, y] of [[a, b], [dropPron(a), dropPron(b)], [dropPron(a), b], [a, dropPron(b)]]) {
+      const d = wordDist(x, y);
+      if (!best || d < best.d) best = { d, s, n: y.length };
+    }
+  }
+  const acc = t => norm(t).split(' ').filter(Boolean).map(w => w.normalize('NFC'));
+  const ai = acc(input), si = acc(best.s);
+  const exactAccents = [ai.join(' '), ai.slice(1).join(' ')].some(x => x === si.join(' ') || x === si.slice(1).join(' '));
+  if (best.d === 0) return { ok: true, sol: best.s, note: exactAccents ? '' : 'Inhaltlich richtig – achte auf Akzente und Schreibweise.' };
+  if (best.d === 1 && best.n >= 5) return { ok: true, partial: true, sol: best.s, note: 'Fast! Ein Wort weicht ab.' };
+  return { ok: false, sol: best.s };
+}
 function lev(a, b) {
   const m = a.length, n = b.length; if (Math.abs(m - n) > 2) return 9;
   let p = Array.from({ length: n + 1 }, (_, i) => i);
@@ -246,15 +285,18 @@ function inScope(v, scope) {
 function renderHome() {
   const st = S.settings, s = streak();
   const newV = D.vocab.filter(isNew);
-  const due = D.vocab.filter(v => ['de', 'es'].some(d => { const c = card(`v:${v.id}:${d}`); return c && c.due <= NOW(); })).length;
+  const newS = D.sentences.filter(isNew);
+  const due = D.vocab.filter(v => ['de', 'es'].some(d => { const c = card(`v:${v.id}:${d}`); return c && c.due <= NOW(); })).length
+    + D.sentences.filter(x => { const c = card('s:' + x.id); return c && c.due <= NOW(); }).length;
   const hour = new Date().getHours();
   const greet = hour < 12 ? '¡Buenos días, Christian!' : hour < 20 ? '¡Buenas tardes, Christian!' : '¡Buenas noches, Christian!';
   const pts = S.points || 0, rk = rankOf(pts), nx = nextRank(pts);
+  if (st.focus === 'speak') st.focus = 'mix';
   view().innerHTML = `
     <section class="marquee">
       <div class="greet">${greet}</div>
       <div class="title">Español</div>
-      <div class="tag">Lektion ${D.maxLesson} · ${fmtN(D.vocab.length)} Vokabeln · ${Object.keys(D.items).length} Übungen</div>
+      <div class="tag">Lektion ${D.maxLesson} · ${fmtN(D.sentences.length)} Alltagssätze · ${fmtN(D.vocab.length)} Vokabeln</div>
     </section>
     <div class="leds">
       <div class="ledbox"><b>${fmtN(pts)}</b><span>Punkte</span></div>
@@ -266,21 +308,19 @@ function renderHome() {
       <div class="label">Spielzeit</div>
       ${seg('minutes', [[5, '5 Min'], [10, '10 Min'], [15, '15 Min'], [20, '20 Min'], [0, 'Offen']], st.minutes)}
       <div class="label">Spiel</div>
-      ${seg('focus', [['mix', 'Mix'], ['vocab', 'Vokabeln'], ['grammar', 'Grammatik'], ['speak', 'Sprechen']], st.focus)}
+      ${seg('focus', [['mix', 'Mix'], ['sent', 'Sätze'], ['vocab', 'Vokabeln'], ['grammar', 'Grammatik']], st.focus)}
       <div class="label">Stoff</div>
       ${seg('scope', [['all', 'Alles'], ['recent', `Lektion ${D.maxLesson - 3}–${D.maxLesson}`], ['new', 'Neu']], st.scope)}
       <button class="bigbtn" id="start" aria-label="Spiel starten">¡Vamos!<small>Start</small></button>
     </section>
-    ${newV.length ? `<h2>Neu diese Woche <span class="badge">${newV.length}</span></h2>
-      <div class="newstrip">${newV.slice(0, 30).map(v => `<button class="chip" data-say="${esc(v.es)}">${esc(v.es)}<i>${esc(v.de)}</i></button>`).join('')}</div>` : ''}
+    ${newV.length + newS.length ? `<h2>Neu diese Woche <span class="badge">${newV.length + newS.length}</span></h2>
+      <div class="newstrip">${[...newS.slice(0, 15), ...newV.slice(0, 25)].map(v => `<button class="chip" data-say="${esc(v.es)}">${esc(v.es)}<i>${esc(v.de)}</i></button>`).join('')}</div>` : ''}
     <h2>Mehr üben</h2>
-    <button class="row" id="toTalk"><div class="grow"><h3>Gespräch mit Claude</h3><div class="muted small">Rollenspiel mit deinem aktuellen Wortschatz</div></div><span class="chev">›</span></button>
-    <button class="row" id="toDlg"><div class="grow"><h3>Dialoge nachsprechen</h3><div class="muted small">${D.scenes.length} Alltagsszenen, funktioniert offline</div></div><span class="chev">›</span></button>
+    <button class="row" id="toTalk"><div class="grow"><h3>Sprechen</h3><div class="muted small">Gespräch mit Claude und ${D.scenes.length} Dialoge zum Nachsprechen</div></div><span class="chev">›</span></button>
     <p class="muted small" style="margin-top:18px">Inhalte vom ${new Date(D.meta.generated).toLocaleDateString('de-DE')}. Neue kommen jeden Montag automatisch.</p>`;
   bindSeg(view(), (k, v) => { st[k] = k === 'minutes' ? +v : v; save(); });
   $('#start').onclick = () => { beep('coin'); startSession(); };
   $('#toTalk').onclick = () => go('talk');
-  $('#toDlg').onclick = () => { go('talk'); setTimeout(() => $('#dlgs')?.scrollIntoView(), 50); };
 }
 
 /* ---------- Session ---------- */
@@ -328,22 +368,40 @@ function chooseKind() {
   if (SES.topic) return 'grammar';
   if (SES.focus === 'vocab') return 'vocab';
   if (SES.focus === 'grammar') return 'grammar';
+  if (SES.focus === 'sent') return Math.random() < .85 ? 'sent' : 'shadow';
   const r = Math.random();
-  return r < 0.58 ? 'vocab' : r < 0.88 ? 'grammar' : 'shadow';
+  return r < 0.45 ? 'sent' : r < 0.72 ? 'vocab' : r < 0.92 ? 'grammar' : 'shadow';
 }
 
 function nextItem() {
   if (timeUp()) return finish();
   // falsch beantwortete Karten kommen nach 3 anderen wieder
   const rq = SES.requeue.findIndex(r => SES.done - r.at >= 3);
-  if (rq >= 0) { const r = SES.requeue.splice(rq, 1)[0]; return r.kind === 'vocab' ? showVocab(r.v, r.dir) : r.kind === 'grammar' ? showGrammar(r.it) : showShadow(r.sc, r.i); }
+  if (rq >= 0) { const r = SES.requeue.splice(rq, 1)[0]; return r.kind === 'vocab' ? showVocab(r.v, r.dir) : r.kind === 'grammar' ? showGrammar(r.it) : r.kind === 'sent' ? showSentence(r.s) : showShadow(r.sc, r.i); }
   let kind = chooseKind();
-  for (let tries = 0; tries < 3; tries++) {
-    if (kind === 'vocab') { const p = pickVocab(); if (p) return showVocab(p.v, p.dir); kind = 'grammar'; }
-    if (kind === 'grammar') { const it = pickGrammar(); if (it) return showGrammar(it); kind = 'vocab'; }
-    if (kind === 'shadow') { const p = pickShadow(); if (p) return showShadow(p.sc, p.i); kind = 'vocab'; }
+  const order = { sent: ['sent', 'vocab', 'grammar'], vocab: ['vocab', 'sent', 'grammar'], grammar: ['grammar', 'sent', 'vocab'], shadow: ['shadow', 'sent', 'vocab'] }[kind];
+  for (const k of order) {
+    if (k === 'sent') { const s = pickSentence(); if (s) return showSentence(s); }
+    if (k === 'vocab') { const p = pickVocab(); if (p) return showVocab(p.v, p.dir); }
+    if (k === 'grammar') { const it = pickGrammar(); if (it) return showGrammar(it); }
+    if (k === 'shadow') { const p = pickShadow(); if (p) return showShadow(p.sc, p.i); }
   }
   finish();
+}
+
+function pickSentence() {
+  let pool = D.sentences.filter(x => !SES.recent.includes(x.id));
+  if (SES.scope === 'new') pool = pool.filter(isNew);
+  if (!pool.length) return null;
+  const due = pool.filter(x => { const c = card('s:' + x.id); return c && c.due <= NOW(); });
+  if (due.length) { due.sort((a, b) => weakness(card('s:' + b.id)) - weakness(card('s:' + a.id))); return pick(due.slice(0, 5)); }
+  SES.newSent = SES.newSent || 0;
+  if (SES.newSent >= Math.max(6, Math.round((SES.minutes || 15) * 1.2))) return null;
+  const fresh = pool.filter(x => !card('s:' + x.id));
+  if (!fresh.length) return null;
+  SES.newSent++;
+  const nw = fresh.filter(isNew);
+  return pick(nw.length ? nw : fresh.slice(0, 40));
 }
 
 function pickVocab() {
@@ -428,24 +486,25 @@ function showVocab(v, dir) {
   const gained = ok => ok && SES.last ? `<span class="pts">+${SES.last}</span>` : '';
   const nextBtn = () => { $('#nx').onclick = nextItem; $('#nx').focus(); };
   if (dir === 'es') {
-    const others = shuffle(D.vocab.filter(x => x.id !== v.id && x.de !== v.de && Math.abs(x.de.length - v.de.length) < 18 && (x.l === v.l || Math.random() < .3))).slice(0, 3);
-    const opts = shuffle([v, ...others]);
+    // Spanisch → Deutsch: ohne Antwortvorschläge – selbst überlegen, aufdecken, ehrlich bewerten
     shell(`<div class="card"><div class="kind">Was heißt das? ${tag}<span style="margin-left:auto">${esc(src)}</span></div>
-      <div class="pline">${reel(v.es, 'es')}${spkBtn(v.es)}</div>${v.n ? `<div class="sub small">${esc(v.n)}</div>` : ''}${mnButton(v.id)}</div>
-      <div class="opts">${opts.map(o => `<button class="opt" data-id="${o.id}">${esc(o.de)}</button>`).join('')}</div><div id="fb"></div>`);
+      <div class="pline">${reel(v.es, 'es')}${spkBtn(v.es)}</div><p class="sub small">Sag die Bedeutung laut, dann aufdecken.</p>${mnButton(v.id, false, 'Tipp: Eselsbrücke (halbe Punkte)')}</div>
+      <div id="fb"><div class="actions"><button class="b-main" id="rev">Aufdecken</button></div></div>`);
     say(v.es);
-    view().querySelectorAll('.opt').forEach(b => b.onclick = () => {
-      const ok = b.dataset.id === v.id;
-      view().querySelectorAll('.opt').forEach(x => { x.disabled = true; if (x.dataset.id === v.id) x.classList.add('ok'); });
-      if (!ok) b.classList.add('bad');
-      grade(key, ok); afterAnswer(ok, { kind: 'vocab', v, dir });
-      $('#fb').innerHTML = `<div class="actions"><button class="b-main" id="nx">Weiter</button></div>`;
-      if (!ok) fixMnFeedback(v.id);
-      nextBtn();
-    });
+    $('#rev').onclick = () => {
+      $('#fb').innerHTML = `<div class="feedback ok"><div class="sol">${esc(v.de)}</div>${v.n ? `<div class="small">${esc(v.n)}</div>` : ''}</div>
+        <div class="actions"><button class="b-bad" data-g="0">Nicht gewusst</button><button class="b-mid" data-g="1">Fast</button><button class="b-ok" data-g="2">Gewusst</button></div>`;
+      view().querySelectorAll('[data-g]').forEach(b => b.onclick = () => {
+        const g = +b.dataset.g; grade(key, g > 0, g === 1); afterAnswer(g > 0, { kind: 'vocab', v, dir }, g === 1);
+        if (g === 0 && mnOf(v.id)) { $('#fb').innerHTML = `<div class="feedback bad"><b>Merk dir das</b><div class="sol es">${esc(v.es)} = ${esc(v.de)}</div>${mnBoxHTML(v.id)}</div><div class="actions"><button class="b-main" id="nx">Weiter</button></div>`; nextBtn(); }
+        else nextItem();
+      });
+    };
     return;
   }
-  const long = v.es.length > 30 || v.es.split(' ').length > 5 || / \/ .* \/ /.test(v.es);
+  const isSent = !/ \/ /.test(v.es) && (/[.?!]$/.test(v.es.trim()) || /^[¿¡]/.test(v.es.trim()) || v.es.split(' ').length >= 5);
+  if (isSent) { showSentence({ id: 'v' + v.id, es: v.es, de: v.de, alt: [], t: src, vocab: v }, key); return; }
+  const long = / \/ .* \/ /.test(v.es) || v.es.split(' ').length > 6;
   if (long) {
     shell(`<div class="card"><div class="kind">Sag es auf Spanisch ${tag}<span style="margin-left:auto">${esc(src)}</span></div>
       ${reel(v.de)}<p class="sub small">Sprich laut, dann aufdecken.</p>${mnButton(v.id, false, 'Tipp: Eselsbrücke (halbe Punkte)')}</div>
@@ -465,9 +524,7 @@ function showVocab(v, dir) {
   shell(`<div class="card"><div class="kind">Auf Spanisch ${tag}<span style="margin-left:auto">${esc(src)}</span></div>
     ${reel(v.de)}${mnButton(v.id, false, 'Tipp: Eselsbrücke (halbe Punkte)')}</div>
     <form class="answer" id="af"><input id="ai" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" lang="es" enterkeyhint="done" placeholder="Antwort …" aria-label="Antwort auf Spanisch"><button class="go">OK</button></form>
-    ${accentKeys()}
     <div id="fb"><div class="actions"><button class="b-plain" id="idk">Weiß ich nicht</button></div></div>`);
-  bindAccents();
   const inp = $('#ai'); setTimeout(() => inp.focus(), 60);
   const done = (res) => {
     inp.disabled = true; inp.classList.add(res.ok ? 'ok' : 'bad');
@@ -483,6 +540,41 @@ function showVocab(v, dir) {
   $('#af').onsubmit = e => { e.preventDefault(); if (!inp.disabled && inp.value.trim()) done(check(inp.value, variants(v.es))); };
   $('#idk').onclick = () => done({ ok: false });
 }
+
+/* Satz-Karte: deutschen Satz sehen, ganzen spanischen Satz schreiben (oder per Diktat sprechen). */
+function showSentence(s, keyOverride) {
+  remember(s.id);
+  SES.cur = s.vocab ? s.vocab.id : null; SES.hint = false; SES.answered = false;
+  const key = keyOverride || 's:' + s.id;
+  const tag = isNew(s.vocab || s) ? '<span class="tag new">neu</span>' : '';
+  const sols = [s.es, ...(s.alt || [])];
+  shell(`<div class="card"><div class="kind">Sag es als ganzen Satz ${tag}<span style="margin-left:auto">${esc(s.t || '')}</span></div>
+    <div class="reel spin"><span class="strip"><div class="prompt long">${esc(s.de)}</div></span></div>
+    ${s.vocab ? mnButton(s.vocab.id, false, 'Tipp: Eselsbrücke (halbe Punkte)') : ''}</div>
+    <form class="answer sentence" id="af"><textarea id="ai" rows="3" autocomplete="off" autocapitalize="sentences" autocorrect="off" spellcheck="false" lang="es" enterkeyhint="done" placeholder="Ganzen Satz auf Spanisch schreiben – oder Mikrofon der Tastatur nutzen" aria-label="Satz auf Spanisch"></textarea></form>
+    <div id="fb"><div class="actions"><button class="b-plain" id="idk">Weiß ich nicht</button><button class="b-main" id="ok">Prüfen</button></div></div>`);
+  const inp = $('#ai'); setTimeout(() => inp.focus(), 60);
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); } });
+  const done = (res, input) => {
+    inp.disabled = true; inp.classList.add(res.ok ? 'ok' : 'bad');
+    grade(key, res.ok, res.partial); afterAnswer(res.ok, { kind: 'sent', s }, res.partial);
+    const sol = res.sol || s.es;
+    say(sol);
+    const shown = input && !res.ok ? markSolution(sol, input) : res.partial ? markSolution(sol, input) : esc(sol);
+    $('#fb').innerHTML = `<div class="feedback ${res.ok ? 'ok' : 'bad'}">${res.ok && SES.last ? `<span class="pts">+${SES.last}</span>` : ''}<b>${res.ok ? (res.partial ? '¡Casi!' : '¡Perfecto!') : 'So sagt man es:'}</b>
+      <div class="pline"><div class="sol es">${shown}</div>${spkBtn(sol)}</div>
+      ${res.note ? `<div class="small">${esc(res.note)}</div>` : ''}${!res.ok && input ? `<div class="small muted">Gelb markiert: fehlt oder anders bei dir.</div>` : ''}
+      ${s.alt && s.alt.length ? `<div class="small muted">Auch richtig: ${s.alt.map(esc).join(' · ')}</div>` : ''}</div>
+      ${!res.ok && s.vocab ? '<div data-fbmn></div>' : ''}
+      <div class="actions">${res.ok ? '' : '<button class="b-plain" id="was">Hatte ich richtig</button>'}<button class="b-main" id="nx">Weiter</button></div>`;
+    if (!res.ok && s.vocab) fixMnFeedback(s.vocab.id);
+    $('#nx').onclick = nextItem; $('#nx').focus();
+    const w = $('#was'); if (w) w.onclick = () => { S.cards[key].w--; S.cards[key].b = 2; S.cards[key].due = NOW() + 2 * DAY; SES.ok++; SES.requeue.pop(); SES.wrongs.pop(); SES.pts += 10; updateHud(); save(); nextItem(); };
+  };
+  const submit = () => { if (inp.disabled || !inp.value.trim()) return; done(checkSentence(inp.value, sols), inp.value); };
+  $('#ok').onclick = submit;
+  $('#idk').onclick = () => done({ ok: false, sol: s.es }, '');
+}
 // Nach falscher Antwort: Eselsbrücke-Knopf in der Karte hervorheben und direkt öffnen lassen
 function fixMnFeedback(id) {
   const holder = $('[data-fbmn]'); if (holder) holder.remove();
@@ -490,7 +582,7 @@ function fixMnFeedback(id) {
   const b = view().querySelector(`.card [data-mn="${id}"]`);
   if (b) { b.classList.add('pulse'); b.innerHTML = BULB + 'Eselsbrücke ansehen'; }
 }
-function accentKeys() { return `<div class="keys">${['á', 'é', 'í', 'ó', 'ú', 'ñ', 'ü', '¿', '¡'].map(k => `<button type="button" data-k="${k}">${k}</button>`).join('')}</div>`; }
+function accentKeys() { return ''; }
 function bindAccents() {
   view().querySelectorAll('[data-k]').forEach(b => b.onclick = () => {
     const i = $('#ai'); if (!i || i.disabled) return; const s = i.selectionStart ?? i.value.length;
@@ -504,58 +596,44 @@ function showGrammar(it) {
   const t = D.grammar.find(t => t.id === it.topic), key = 'g:' + it.id;
   const head = `<div class="kind"><span class="tag">${esc(t.title)}</span><span class="muted small" style="margin-left:auto">L${t.lessons.join(', ')}</span></div>`;
   const rule = `<details class="rulebox"><summary>Regel ansehen</summary><div class="rule">${t.rule}</div></details>`;
-  const fin = (ok, partial, sol, note) => {
-    grade(key, ok, partial); afterAnswer(ok, { kind: 'grammar', it });
-    $('#fb').innerHTML = `<div class="feedback ${ok ? 'ok' : 'bad'}"><b>${ok ? '¡Muy bien!' : 'Richtig wäre:'}</b>${sol ? `<div class="pline"><div class="sol es">${esc(sol)}</div>${spkBtn(sol)}</div>` : ''}${note ? `<div class="small">${esc(note)}</div>` : ''}${it.ex ? `<div class="small">${esc(it.ex)}</div>` : ''}</div>${ok ? '' : rule.replace('<details', '<details open')}
-      <div class="actions"><button class="b-main" id="nx">Weiter</button></div>`;
+  const fin = (ok, partial, sol, note, input) => {
+    grade(key, ok, partial); afterAnswer(ok, { kind: 'grammar', it }, partial);
+    const shown = input && !ok ? markSolution(sol, input) : esc(sol);
+    $('#fb').innerHTML = `<div class="feedback ${ok ? 'ok' : 'bad'}">${ok && SES.last ? `<span class="pts">+${SES.last}</span>` : ''}<b>${ok ? '¡Muy bien!' : 'Richtig wäre:'}</b>${sol ? `<div class="pline"><div class="sol es">${shown}</div>${spkBtn(sol)}</div>` : ''}${note ? `<div class="small">${esc(note)}</div>` : ''}${it.ex ? `<div class="small">${esc(it.ex)}</div>` : ''}</div>${ok ? '' : rule.replace('<details', '<details open')}
+      <div class="actions">${ok ? '' : '<button class="b-plain" id="was">Hatte ich richtig</button>'}<button class="b-main" id="nx">Weiter</button></div>`;
     $('#nx').onclick = nextItem; $('#nx').focus();
+    const w = $('#was'); if (w) w.onclick = () => { S.cards[key].w--; S.cards[key].b = 2; S.cards[key].due = NOW() + 2 * DAY; SES.ok++; SES.requeue.pop(); SES.wrongs.pop(); SES.pts += 10; updateHud(); save(); nextItem(); };
   };
   const filled = ans => it.q ? it.q.replace('___', ans.split(' / ')[0]).replace('___', ans.split(' / ')[1] || '') : ans;
-  if (it.t === 'mc') {
-    const right = it.opts[0];
-    shell(`<div class="card">${head}<div class="prompt es long">${esc(it.q)}</div>${it.de ? `<div class="sub">${esc(it.de)}</div>` : ''}</div>
-      <div class="opts">${shuffle(it.opts).map(o => `<button class="opt" data-o="${esc(o)}">${esc(o)}</button>`).join('')}</div><div id="fb">${rule}</div>`);
-    view().querySelectorAll('.opt').forEach(b => b.onclick = () => {
-      const ok = b.dataset.o === right;
-      view().querySelectorAll('.opt').forEach(x => { x.disabled = true; if (x.dataset.o === right) x.classList.add('ok'); });
-      if (!ok) b.classList.add('bad');
-      fin(ok, false, /^\d+$|^\d+:\d+$/.test(it.q) ? right : filled(right));
-    });
-  } else if (it.t === 'type') {
-    shell(`<div class="card">${head}<div class="prompt es long">${esc(it.q)}</div>${it.de ? `<div class="sub">${esc(it.de)}</div>` : ''}</div>
-      <form class="answer" id="af"><input id="ai" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" lang="es" enterkeyhint="done" placeholder="Lücke ausfüllen …" aria-label="Antwort"><button class="b-main" style="border:0;border-radius:14px;padding:0 18px;font-weight:600">OK</button></form>
-      ${accentKeys()}<div id="fb">${rule}</div>`);
-    bindAccents(); const inp = $('#ai'); setTimeout(() => inp.focus(), 60);
-    $('#af').onsubmit = e => {
-      e.preventDefault(); if (inp.disabled || !inp.value.trim()) return;
-      const r = check(inp.value, it.ans.map(norm)); inp.disabled = true; inp.classList.add(r.ok ? 'ok' : 'bad');
-      fin(r.ok, r.partial, /^\d+$/.test(it.q) || it.q.includes('–') || it.q.includes('→') ? it.ans[0] : filled(it.ans[0]), r.note);
-    };
-  } else {
-    const words = it.ans.replace(/([¿¡])/g, '$1 ').split(/\s+/).filter(Boolean);
-    const target = words.map(w => w.toLowerCase());
-    let chosen = [];
-    const pool = shuffle(words.map((w, i) => ({ w, i })));
-    shell(`<div class="card">${head}<div class="sub">Bau den Satz:</div><div class="prompt long">${esc(it.de)}</div></div>
-      <div class="tiles" id="tgt"></div><div class="tiles pool" id="pool"></div>
-      <div id="fb"><div class="actions"><button class="b-plain" id="undo">Zurück</button><button class="b-main" id="chk">Prüfen</button></div>${rule}</div>`);
-    const draw = () => {
-      $('#tgt').innerHTML = chosen.map((p, k) => `<button class="tile" data-k="${k}">${esc(p.w)}</button>`).join('');
-      $('#pool').innerHTML = pool.filter(p => !chosen.includes(p)).map(p => `<button class="tile" data-i="${p.i}">${esc(p.w)}</button>`).join('');
-      $('#tgt').querySelectorAll('[data-k]').forEach(b => b.onclick = () => { chosen.splice(+b.dataset.k, 1); draw(); });
-      $('#pool').querySelectorAll('[data-i]').forEach(b => b.onclick = () => { chosen.push(pool.find(p => p.i === +b.dataset.i)); draw(); });
-    };
-    draw();
-    $('#undo').onclick = () => { chosen.pop(); draw(); };
-    $('#chk').onclick = () => {
-      const ok = chosen.length === target.length && chosen.every((p, k) => p.w.toLowerCase() === target[k]);
-      $('#tgt').querySelectorAll('button').forEach(b => b.disabled = true);
-      say(it.ans); fin(ok, false, it.ans);
-    };
+  const isSolo = q => /^\d+$|^\d+:\d+$/.test(q || '');
+  if (it.t === 'order') {
+    // ganzer Satz statt Wortbausteine
+    shell(`<div class="card">${head}<div class="sub">Schreib den ganzen Satz auf Spanisch:</div><div class="prompt long">${esc(it.de)}</div></div>
+      <form class="answer sentence" id="af"><textarea id="ai" rows="3" autocomplete="off" autocapitalize="sentences" autocorrect="off" spellcheck="false" lang="es" enterkeyhint="done" placeholder="Ganzer Satz …" aria-label="Satz auf Spanisch"></textarea></form>
+      <div id="fb"><div class="actions"><button class="b-plain" id="idk">Weiß ich nicht</button><button class="b-main" id="ok">Prüfen</button></div>${rule}</div>`);
+    const inp = $('#ai'); setTimeout(() => inp.focus(), 60);
+    const submit = () => { if (inp.disabled || !inp.value.trim()) return; const r = checkSentence(inp.value, [it.ans]); inp.disabled = true; inp.classList.add(r.ok ? 'ok' : 'bad'); say(it.ans); fin(r.ok, r.partial, it.ans, r.note, inp.value); };
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); } });
+    $('#ok').onclick = submit;
+    $('#idk').onclick = () => { inp.disabled = true; say(it.ans); fin(false, false, it.ans, '', ''); };
+    return;
   }
+  // mc und type: Lücke frei ausfüllen, keine Auswahl
+  const answers = it.t === 'mc' ? [it.opts[0]] : it.ans;
+  const solo = isSolo(it.q);
+  const accepted = answers.flatMap(a => [a, a.replace(/\s*\/\s*/g, ' '), a.replace(/\s*\/\s*/g, ', ')]).map(norm);
+  shell(`<div class="card">${head}${solo ? '<div class="sub">Schreib es auf Spanisch:</div>' : ''}<div class="prompt es long">${esc(it.q)}</div>${it.de ? `<div class="sub">${esc(it.de)}</div>` : ''}${(it.q || '').split('___').length > 2 ? '<div class="sub small">Zwei Lücken: beide Wörter nacheinander eingeben.</div>' : ''}</div>
+    <form class="answer" id="af"><input id="ai" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" lang="es" enterkeyhint="done" placeholder="${solo ? 'Antwort …' : 'Lücke ausfüllen …'}" aria-label="Antwort"><button class="go">OK</button></form>
+    <div id="fb"><div class="actions"><button class="b-plain" id="idk">Weiß ich nicht</button></div>${rule}</div>`);
+  const inp = $('#ai'); setTimeout(() => inp.focus(), 60);
+  const solText = solo || (it.q || '').includes('–') || (it.q || '').includes('→') ? answers[0] : filled(answers[0]);
+  $('#af').onsubmit = e => {
+    e.preventDefault(); if (inp.disabled || !inp.value.trim()) return;
+    const r = check(inp.value, accepted); inp.disabled = true; inp.classList.add(r.ok ? 'ok' : 'bad');
+    fin(r.ok, r.partial, solText, r.ok ? '' : 'Du hattest: ' + inp.value);
+  };
+  $('#idk').onclick = () => { inp.disabled = true; fin(false, false, solText, ''); };
 }
-
-/* Nachsprechen (eine Dialogzeile) */
 function showShadow(sc, i) {
   const ln = sc.lines[i], key = `d:${sc.id}:${i}`, prev = sc.lines[i - 1];
   remember(key); SES.cur = null; SES.hint = false; SES.answered = false;
@@ -617,7 +695,7 @@ function finish() {
   save();
   const up = rankOf(S.points)[1] !== rankOf(before)[1];
   const pct = SES.done ? Math.round(SES.ok / SES.done * 100) : 0;
-  const wrong = [...new Map(SES.wrongs.map(w => [w.v ? w.v.id : w.it ? w.it.id : w.sc.id + w.i, w])).values()].slice(0, 12);
+  const wrong = [...new Map(SES.wrongs.map(w => [w.v ? w.v.id : w.it ? w.it.id : w.s ? w.s.id : w.sc.id + w.i, w])).values()].slice(0, 12);
   const s = SES; SES = null;
   document.body.classList.remove('in-session');
   view().innerHTML = `<section class="marquee ${s.pts ? 'fast' : ''}"><div class="greet">${pct >= 85 ? '¡Excelente!' : pct >= 60 ? '¡Muy bien!' : s.done ? '¡Ánimo!' : 'Runde beendet'}</div>
@@ -625,6 +703,7 @@ function finish() {
       <div class="tag">${s.done} Aufgaben, ${s.ok} richtig (${pct} %), beste Serie ${s.best || 0}</div></section>
     <p class="rank">${up ? 'Aufgestiegen zum ' : 'Rang: '}<b>${rankOf(S.points)[1]}</b> · ${fmtN(S.points)} Punkte gesamt</p>
     ${wrong.length ? `<h2>Noch mal anschauen</h2><ul class="vlist">${wrong.map(w => w.v ? `<li><div class="grow"><div class="es">${esc(w.v.es)}</div><div class="muted small">${esc(w.v.de)}</div></div>${spkBtn(w.v.es)}${mnOf(w.v.id) ? mnBoxHTML(w.v.id) : ''}</li>`
+      : w.s ? `<li><div class="grow"><div class="es">${esc(w.s.es)}</div><div class="muted small">${esc(w.s.de)}</div></div>${spkBtn(w.s.es)}${w.s.vocab && mnOf(w.s.vocab.id) ? mnBoxHTML(w.s.vocab.id) : ''}</li>`
       : w.it ? `<li><div class="grow"><div class="es">${esc(w.it.q || w.it.ans)}</div><div class="muted small">${esc(D.grammar.find(t => t.id === w.it.topic).title)}</div></div></li>`
         : `<li><div class="grow"><div class="es">${esc(w.sc.lines[w.i].es)}</div><div class="muted small">${esc(w.sc.lines[w.i].de)}</div></div>${spkBtn(w.sc.lines[w.i].es)}</li>`).join('')}</ul>` : ''}
     <button class="cta" id="again">Noch eine Runde</button><button class="cta ghost" id="home">Fertig</button>`;
@@ -751,14 +830,23 @@ function playDialog(sc) {
 }
 
 /* ---------- Bibliothek ---------- */
-let LIB = { tab: 'vocab', q: '', l: 'all', st: 'all' };
+let LIB = { tab: 'sent', q: '', l: 'all', st: 'all' };
 function renderLib() {
-  view().innerHTML = `<h1>Bibliothek</h1>${seg('libtab', [['vocab', 'Vokabeln'], ['grammar', 'Grammatik']], LIB.tab)}<div id="lib" style="margin-top:14px"></div>`;
+  view().innerHTML = `<h1>Bibliothek</h1>${seg('libtab', [['sent', 'Sätze'], ['vocab', 'Vokabeln'], ['grammar', 'Grammatik']], LIB.tab)}<div id="lib" style="margin-top:14px"></div>`;
   bindSeg(view(), (k, v) => { LIB.tab = v; drawLib(); });
   drawLib();
 }
 function drawLib() {
   const el = $('#lib');
+  if (LIB.tab === 'sent') {
+    const topics = [...new Set(D.sentences.map(x => x.t))];
+    el.innerHTML = `<p class="muted small">${D.sentences.length} Alltagssätze. In den Runden schreibst du sie selbst auf Spanisch.</p>` + topics.map(t => {
+      const list = D.sentences.filter(x => x.t === t);
+      const known = list.filter(x => { const c = card('s:' + x.id); return c && c.b >= 3; }).length;
+      return `<details class="set"><summary><b>${esc(t)}</b> <span class="muted small">${list.length} Sätze · ${known} sitzen</span></summary><ul class="vlist">${list.map(x => `<li><div class="grow"><div class="es">${esc(x.es)}</div><div class="muted small">${esc(x.de)}</div></div>${spkBtn(x.es)}</li>`).join('')}</ul></details>`;
+    }).join('');
+    return;
+  }
   if (LIB.tab === 'grammar') {
     el.innerHTML = D.grammar.map(t => {
       const cs = t.items.map(i => card('g:' + i.id)).filter(Boolean); const r = cs.reduce((a, c) => a + c.r, 0), w = cs.reduce((a, c) => a + c.w, 0);

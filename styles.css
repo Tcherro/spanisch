@@ -213,6 +213,10 @@ body.in-session #tabs { display: none; }
 .opt:disabled { color: var(--crema); opacity: 1; }
 
 .answer { display: flex; gap: 8px; }
+.answer textarea { flex: 1; min-width: 0; padding: 14px; border-radius: var(--r-md); border: 2px solid var(--line); background: #120507; font-size: 19px; color: #fff; resize: none; line-height: 1.35; }
+.answer textarea.ok { border-color: var(--win); }
+.answer textarea.bad { border-color: var(--lose); }
+.sol mark { background: var(--oro); color: #2b1600; border-radius: 4px; padding: 0 3px; }
 .answer input {
   flex: 1; min-width: 0; padding: 14px; border-radius: var(--r-md); border: 2px solid var(--line);
   background: #120507; font-size: 19px; color: #fff;
